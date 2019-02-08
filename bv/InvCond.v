@@ -195,14 +195,20 @@ Theorem bvashr_neq2 : forall (x s t : bitvector),
 Proof.
 Admitted.
 
+
+
+
 (*Logical left shift*)
-(* x << s = t <=> (t >> s) << s = t *)
-Theorem bvshl_eq : forall (x s t : bitvector),
-  iff
-    (bv_shl x s = t)
+(* (exists x. x << s = t) <=>( (t >> s) << s = t) *)
+Theorem bvshl_eq : forall (s t : bitvector),
+  (iff
+    (exists (x : bitvector), bv_shl x s = t)
     (bv_shl (bv_shr t s) s = t).
 Proof.
 Admitted.
+
+
+
 
 (* x << s != t <=> t != 0 or s <u size(s) *)
 Theorem bvshl_neq : forall (x s t : bitvector),
