@@ -1,0 +1,141 @@
+-------------------------- Library Structure --------------------------
+
+Module Type BITVECTOR
+(*Dependently typed BVs.*)
+
+
+Module Type RAWBITVECTOR
+(* Non dependently typed BVs. Sizes are explicitly 
+mentioned. Easier to prove stuff. *)
+
+
+Module RAW2BITVECTOR (M:RAWBITVECTOR) <: BITVECTOR.
+(* Functor from non-dependently typed BV to 
+dependently typed BV. *)
+
+
+Module RAWBITVECTOR_LIST <: RAWBITVECTOR.
+(* Instantiation of non-dependently typed BVs. 
+All the implementation is done here. *)
+
+
+Module BITVECTOR_LIST <: BITVECTOR.
+(* Instantiation of dependently typed BVs. Since 
+stuff is harder to prove here, RAWBITVECTOR_LIST 
+is mapped to this using RAW2BITVECTOR *)
+
+
+-------------------------- Implementation of Zeros --------------------------
+(* zeros (n : int) gives a list of n 0s representing BV 0 of size n *)
+
+Module Type BITVECTOR
+(*Dependently typed BVs.*)
+
+Parameter zeros : forall n, bitvector n.
+
+
+Module Type RAWBITVECTOR
+(* Non dependently typed BVs. Sizes are explicitly 
+mentioned. Easier to prove stuff. *)
+
+Parameter zeros : N -> bitvector.
+
+Axiom zeros_size : forall n, size (zeros n) = n.
+
+
+Module RAW2BITVECTOR (M:RAWBITVECTOR) <: BITVECTOR.
+(* Functor from non-dependently typed BV to 
+dependently typed BV. *)
+
+Record bitvector_ (n:N) : Type :=
+	MkBitvector
+		{
+			bv :> M.bitveector;
+			wf : M.size bv = n
+		}.
+Definition bitvector := bitvector_.
+Definition bits n (bv:bitvector n) := M.bits bv.
+
+Definition zeros (n:N) : bitvector n :=
+	@MkBitvector _ (M.zeros n) (M.zeros_size n).
+
+
+
+Module RAWBITVECTOR_LIST <: RAWBITVECTOR.
+(* Instantiation of non-dependently typed BVs. 
+All the implementation is done here. *)
+
+Definition bitvector := list bool.
+
+Fixpoint mk_list_false (t: nat) : list bool :=
+	match t with
+	| O => []
+	| S t' => false::(mk_list_false t')
+end.
+
+Definition zeros (n : N) : bitvector := mk_list_false (N.to_nat n).
+
+Lemma length_mk_list_false: forall n, length (mk_list_false n) = n.
+
+Lemma zeros_size (n : N) : size (zeros n) = n.
+Proof. unfold size. unfold zeros. rewrite length_mk_list_false.
+rewrite N2Nat.id. reflexivity. Qed.
+
+
+Module BITVECTOR_LIST <: BITVECTOR.
+(* Instantiation of dependently typed BVs. Since 
+stuff is harder to prove here, RAWBITVECTOR_LIST 
+is mapped to this using RAW2BITVECTOR *)
+
+
+-------------------------- Implementation of Ones --------------------------
+(* ones (n : int) gives a list of (n - 1) 0s followed by a 1 representing BV 1 of size n *)
+
+Module Type BITVECTOR
+(*Dependently typed BVs.*)
+
+Parameter one : forall n, bitvector n.
+
+
+Module Type RAWBITVECTOR
+(* Non dependently typed BVs. Sizes are explicitly mentioned. Easier to prove stuff. *)
+Parameter one : N -> bitvector.
+
+Axiom one_size : forall n, size (one n) = n.
+
+
+Module RAW2BITVECTOR (M:RAWBITVECTOR) <: BITVECTOR.
+(* Functor from non-dependently typed BV to dependently typed BV. *)
+Definition one (n:N) : bitvector n :=
+	@MkBitvector _ (M.one n) (M.one_size n).
+
+
+Module RAWBITVECTOR_LIST <: RAWBITVECTOR.
+(* Instantiation of non-dependently typed BVs. All the implementation is done here. *)
+Fixpoint mk_list_one (t: nat) : list bool :=
+	match t with
+	| O => []
+	| S O => [true]
+	| S t' => false :: (mk_list_one t')
+	end.
+
+Definition one (n : N) : bitvector := mk_list_one (N.to_nat n).
+
+Lemma length_mk_list_one: forall n, length (mk_list_one n) = n.
+Proof. intro n.
+  induction n as [| n' IHn].
+  - reflexivity.
+  - assert (H: forall n, length (mk_list_one (S n)) = S (length (mk_list_one n))).
+    { intros n. induction n as [ | n'' IHn'].
+      + reflexivity.
+      + reflexivity. }
+    rewrite -> H. rewrite -> IHn. reflexivity.
+Qed.
+
+Lemma one_size (n : N) : size (one n) = n.
+Proof. unfold size. unfold one. rewrite length_mk_list_one.
+  rewrite N2Nat.id. reflexivity. Qed.
+
+
+Module BITVECTOR_LIST <: BITVECTOR.
+(* Instantiation of dependently typed BVs. Since stuff is harder to prove here, RAWBITVECTOR_LIST is mapped to this using RAW2BITVECTOR *)
