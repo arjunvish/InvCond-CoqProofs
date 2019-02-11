@@ -35,12 +35,13 @@ Qed.
 
 Theorem bv_size_nonnegative : forall (x : bitvector), N.to_nat(size x) >= 0.
 Proof.
-intros x. induction x.
-- auto.
-- rewrite -> non_empty_list_size. unfold size in *. 
-  rewrite -> Nat2N.id in *. apply succ_gt_pred. apply IHx.
+  intros x. induction x.
+  - auto.
+  - rewrite -> non_empty_list_size. unfold size in *. 
+    rewrite -> Nat2N.id in *. apply succ_gt_pred. apply IHx.
   Qed. 
 (* End Practice *)
+
 
 
 (*Addition*)
@@ -50,7 +51,12 @@ Theorem bvadd : forall (s t : bitvector) (n : N),
     (exists (x : bitvector), (size x = n) -> ((bv_add x s) = t))
     True.
 Proof. 
-Admitted.
+  intros. split. 
+  + easy.
+  + intros. exists (bv_subt' t s). intros.
+    now rewrite (bv_add_subst_opp H0 H).
+  Qed.
+
 
 
 (*Multiplication*)
