@@ -161,6 +161,16 @@ Proof. intros s t n Hs Ht.
        - exists t. split; easy.
 Qed.
 
+(* (exists x, x | s != t) <=> s != ~0 or t != ~0 *)
+Theorem bvor_neq : forall (s t : bitvector) (n : N), 
+  (size s) = n -> (size t) = n -> iff 
+    (exists (x : bitvector), (size x = n) -> ~((bv_or x s) = t)) 
+    (~(s = (bv_not (zeros (size s)))) 
+      \/ 
+      (~(t = (bv_not (zeros (size t)))))).
+Proof.
+Admitted.
+
 (*Logical right shift*)
 (* (exists x, x >> s = t) <=> (t << s) >> s = t *)
 Theorem bvshr_eq : forall (s t : bitvector) (n : N), 
