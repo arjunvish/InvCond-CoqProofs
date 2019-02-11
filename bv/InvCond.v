@@ -48,15 +48,36 @@ Proof.
 (* (exists x, x + s = t) <=> T *)
 Theorem bvadd : forall (s t : bitvector) (n : N), 
   (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) -> ((bv_add x s) = t))
+    (exists (x : bitvector), (size x = n) /\ ((bv_add x s) = t))
     True.
 Proof. 
-  intros. split. 
-  + easy.
-  + intros. exists (bv_subt' t s). intros.
-    now rewrite (bv_add_subst_opp H0 H).
-  Qed.
+    intros s t n Hs Ht.
+    split; intro A.
+    - easy.
+    - exists (bv_subt' t s).
+      split.
+      + exact (bv_subt'_size Ht Hs).
+      + now rewrite  (bv_add_subst_opp Ht Hs).
+Qed.
 
+(** BE: keep this; may be of use *)
+Theorem bvadd_U:
+  forall (s t x: bitvector) n, (size s) = n /\ (size t) = n /\ (size x) = n ->
+  (bv_add x s) = t <-> (x = (bv_subt' t s)).
+Proof. intros s t x n (Hs, (Ht, Hx)).
+  split; intro A.
+  - rewrite <- A. symmetry. exact (@bv_subt'_add n x s Hx Hs).
+  - rewrite A. exact (bv_add_subst_opp Ht Hs).
+Qed.
+
+(** BE: the same with bvadd *)
+Theorem bvadd_e:
+  forall (s t : bitvector) n, (size s) = n /\ (size t) = n ->
+  exists (x : bitvector), (size x) = n /\ (bv_add x s) = t.
+Proof. intros s t n (Hs, Ht).
+  exists (bv_subt' t s).
+  split; [exact (bv_subt'_size Ht Hs) | exact (bv_add_subst_opp Ht Hs)].
+Qed.
 
 
 (*Multiplication*)
@@ -101,39 +122,44 @@ Admitted.
 
 (*And*)
 (* (exists x, x & s = t) <=> t & s = t*)
+(** BE: please verify this statement *)
 Theorem bvand_eq : forall (s t : bitvector) (n : N), 
   (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) -> (bv_and x s) = t) 
+    (exists (x : bitvector), (size x = n) /\ (bv_and x s) = t) 
     ((bv_and t s) = t).
+Proof. intros s t n Hs Ht.
+       split; intro A.
+       - destruct A as (x, (Hx, A)). rewrite <- A.
+         now rewrite (@bv_and_comm n x s Hx Hs), (@bv_and_idem1 s x n Hs Hx).
+       - exists (bv_and s t). 
+         split.
+         + rewrite (@bv_and_size n s t); easy.
+         + now rewrite (@bv_and_idem1 s t n Hs Ht), (@bv_and_comm n s t Hs Ht).
+Qed.
+
+(* (exists x, x & s != t) <=> s != 0 or t != 0 *)
+(** BE: statement incorrect? *)
+Theorem bvand_neq : forall (s t : bitvector) (n : N), 
+  (size s) = n -> (size t) = n -> iff 
+    (exists (x : bitvector), (size x = n) /\ (bv_and x s) <> t) 
+    (s <> zeros (size s) \/ t <> zeros (size t)).
 Proof.
 Admitted.
 
-(* (exists x, x & s != t) <=> s != 0 or t != 0 *)
-Theorem bvand_neq : forall (s t : bitvector) (n : N), 
-  (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) -> ~((bv_and x s) = t)) 
-    ((bv_and t s) = t).
-Proof.
-Admitted.
 
 (*Or*)
 (* (exists x, x | s = t) <=> t & s = t *)
+(** BE: please verify this statement *)
 Theorem bvor_eq : forall (s t : bitvector) (n : N), 
   (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) -> (bv_or x s) = t) 
-    ((bv_and t s) = t).
-Proof.
-Admitted.
-
-(* (exists x, x | s != t) <=> s != ~0 or t != ~0 *)
-Theorem bvor_neq : forall (s t : bitvector) (n : N), 
-  (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) -> ~((bv_or x s) = t)) 
-    (~(s = (bv_not (zeros (size s)))) 
-      \/ 
-      (~(t = (bv_not (zeros (size t)))))).
-Proof.
-Admitted.
+    (exists (x : bitvector), (size x = n) /\ (bv_or x s) = t) 
+    ((bv_or t s) = t).
+Proof. intros s t n Hs Ht.
+       split; intro A.
+       - destruct A as (x, (Hx, A)). rewrite <- A.
+         now rewrite (@bv_or_idem2 x s n Hx Hs).
+       - exists t. split; easy.
+Qed.
 
 (*Logical right shift*)
 (* (exists x, x >> s = t) <=> (t << s) >> s = t *)
@@ -280,53 +306,3 @@ intros s t. (*eapply ex_intro.
 split.
 - intros H. reflexivity.
 - intros H.*) Admitted.
-
-(* Code from Burak
-(* a + b - b = a *)
-Lemma subt'_add_list: forall (a b : bitvector) (n : N), 
-  N.of_nat (length a) = n -> 
-  N.of_nat (length b) = n -> 
-  subst_list' (add_list_ingr a b false) b = a.
-Proof. intros.
-  unfold subst_list', twos_complement, add_list.
-  rewrite add_neg_list_carry_false. rewrite not_list_length at 1.
-  rewrite add_list_carry_empty_neutral_r.
-  specialize (@add_list_carry_assoc a b (map negb b) false true false true).
-  intro H2. rewrite H2; try auto. rewrite add_neg_list_carry_neg_f.
-  assert (length b = length a).
-    { rewrite <- H in H0. now apply Nat2N.inj in H0. }
-  rewrite H1.
-  now rewrite add_list_carry_unit_t.
-  Qed.
-
-
-(* a + b - b = a *)
-Lemma bv_subt'_add:  forall n a b, 
-  (size a) = n -> (size b) = n -> 
-  (bv_subt' (bv_add a b) b) = a.
-Proof. intros n a b H0 H1. unfold bv_add, bv_subt', add_list, size, bits in *.
-  rewrite H0, H1.
-  rewrite N.eqb_compare. rewrite N.eqb_compare. rewrite N.compare_refl.
-  rewrite <- add_list_carry_length_eq, H0.
-  rewrite N.compare_refl.
-  apply (subt'_add_list a b n); easy.
-  rewrite <- H0 in H1. now apply Nat2N.inj in H1.
-  Qed.
-
-Theorem bvadd_burak:
-  forall (s t x: bitvector) n, (size s) = n /\ (size t) = n /\ (size x) = n ->
-  (bv_add x s) = t <-> (x = (bv_subt' t s)).
-Proof. intros s t x n (Hs, (Ht, Hx)).
-  split; intro A.
-  - rewrite <- A. symmetry. exact (bv_subt'_add n x s Hx Hs).
-  - rewrite A. exact (bv_add_subst_opp Ht Hs).
-  Qed.
-
-Theorem bvadd_e:
-  forall (s t : bitvector) n, (size s) = n /\ (size t) = n ->
-  exists (x : bitvector), (size x) = n /\ (bv_add x s) = t.
-Proof. intros s t n (Hs, Ht).
-  exists (bv_subt' t s).
-  split; [exact (bv_subt'_size Ht Hs) | exact (bv_add_subst_opp Ht Hs)].
-  Qed.
-*)
