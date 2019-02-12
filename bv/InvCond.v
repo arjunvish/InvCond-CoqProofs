@@ -268,13 +268,27 @@ Admitted.
 
 (*Logical left shift*)
 (* (exists x, x << s = t) <=> (t >> s) << s = t *)
-Theorem bvshl_eq : forall (s t : bitvector) (n : N), 
-  (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) -> bv_shl x s = t)
-    (bv_shl (bv_shr t s) s = t).
-Proof.
-Admitted.
-
+Theorem bvshl_eq : forall (s t : bitvector) (n : N),
+   (size s) = n -> (size t) = n -> iff
+     (exists (x : bitvector), (size x = n) /\ bv_shl_a x s = t)
+     (bv_shl_a (bv_shr_a t s) s = t).
+Proof. intros s t n Hs Ht.
+        split; intro A.
+        - destruct A as (x, (Hx, A)).
+          rewrite <- A.
+          unfold bv_shl_a, bv_shr_a.
+          rewrite Hx, Hs, N.eqb_refl.
+          unfold size in *. rewrite length_shl_n_bits_a, Hx.
+          rewrite N.eqb_refl.
+          rewrite length_shr_n_bits_a, length_shl_n_bits_a, Hx.
+          rewrite N.eqb_refl.
+          now rewrite shl_n_shr_a.
+        - exists (bv_shr_a t s). split.
+          unfold size, bv_shr_a.
+         rewrite Hs, Ht, N.eqb_refl.
+         now rewrite length_shr_n_bits_a.
+         easy.
+Qed.
 
 (* (exists x, x << s != t) <=> t != 0 or s <u size(s) *)
 Theorem bvshl_neq : forall (s t : bitvector) (n : N), 

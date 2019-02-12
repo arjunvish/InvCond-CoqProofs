@@ -2907,6 +2907,80 @@ Proof. intro a.
          now rewrite H0, H.
 Qed.
 
+Lemma skipn_all: forall (A: Type) n (l: list A), length l = n -> skipn n l = [].
+Proof. intros A n.
+       induction n; intros.
+       - cbn. now apply length_zero_iff_nil in H.
+       - cbn. case_eq l; intros.
+         + easy.
+         + apply IHn. subst. cbn in H. lia.
+Qed.
+
+(* skipn n0 (mk_list_false n0 ++ firstn (length a0 - n0) (a :: a0)) = firstn (length a0 - n0) (a :: a0)
+ *)
+Lemma skipn_jo: forall n (a: list bool),
+skipn n (mk_list_false n ++ a) = a.
+Proof. intro n.
+       induction n; intros.
+       - now cbn.
+       - cbn. apply IHn.
+Qed.
+
+Lemma shl_n_shr_a: forall a n,
+   shl_n_bits_a (shr_n_bits_a (shl_n_bits_a a n) n) n = shl_n_bits_a a n.
+Proof. intro a.
+        induction a; intros.
+        - now cbn.
+        - unfold shr_n_bits_a, shl_n_bits_a.
+          case_eq ((n <? length (a :: a0))%nat); intros.
+          rewrite !app_length, !length_mk_list_false, !firstn_length.
+          assert (Hone: Init.Nat.min (length (a :: a0) - n) (length (a :: a0))%nat =
+                      (length (a :: a0) - n)%nat).
+          { rewrite Min.min_l. easy.
+            lia.
+          }
+          rewrite Hone. 
+          assert (Htwo: (n + (length (a :: a0) - n))%nat = (length (a :: a0))%nat).
+          { rewrite le_plus_minus_r.
+            easy.
+            apply Nat.ltb_lt in H. lia. 
+          }
+          rewrite Htwo, H.
+          assert (length (skipn n (mk_list_false n ++
+                   firstn (length (a :: a0) - n) (a :: a0)) ++ mk_list_false n) = length (a :: a0)).
+          { rewrite skipn_jo.
+            rewrite app_length, firstn_length, length_mk_list_false.
+            rewrite Min.min_l, Nat.sub_add.
+            easy. 
+            apply Nat.ltb_lt in H. lia.
+            lia.
+          }
+          rewrite H0, H.
+          f_equal.
+          rewrite firstn_app, length_skipn, app_length, length_mk_list_false.
+          assert ((n + length (firstn (length (a :: a0) - n) (a :: a0)) - n)%nat = 
+                  (length (a :: a0) - n)%nat).
+          { rewrite firstn_length.
+            rewrite Min.min_l, minus_plus. easy.
+            apply Nat.ltb_lt in H. lia.
+          }
+          rewrite H1.
+          assert ((length (a :: a0) - n - (length (a :: a0) - n))%nat = 0%nat).
+          { lia. }
+          rewrite H2. 
+          assert (firstn 0 (mk_list_false n) = []).
+          { now cbn. }
+          rewrite H3, app_nil_r.
+          assert ((skipn n (mk_list_false n ++ firstn (length (a :: a0) - n) (a :: a0) )) =
+                  (firstn (length (a :: a0) - n) (a :: a0))).
+          { cbn. case_eq n; intros.
+            now cbn.
+            cbn. rewrite skipn_jo. easy.
+          } rewrite H4. 
+          now rewrite firstn_firstn, Nat.min_id.
+          now rewrite !length_mk_list_false, H, length_mk_list_false, H.
+Qed.
+
 Lemma length_shr_one_bit: forall a, length (shr_one_bit a) = length a.
 Proof. intro a.
        induction a; intros.
