@@ -143,9 +143,20 @@ Theorem bvand_neq : forall (s t : bitvector) (n : N),
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ (bv_and x s) <> t) 
     (s <> zeros (size s) \/ t <> zeros (size t)).
-Proof.
+Proof. intros s t n Hs Ht.
+       split; intro A. destruct A as (x, (Hx, A)).
+       unfold not in *.
+       left. intro HS. apply A.
+       rewrite HS in A. unfold zeros in *.
+       rewrite HS.
+       specialize (@bv_and_0_absorb x); intro H.
+       unfold bits in H. unfold size.
+       rewrite Nat2N.id.
+       assert (length s = length x) by admit.
+       rewrite H0, H.
+       unfold size in A.
+       rewrite Nat2N.id, H0 in A.
 Admitted.
-
 
 (*Or*)
 (* (exists x, x | s = t) <=> t & s = t *)
@@ -175,10 +186,25 @@ Admitted.
 (* (exists x, x >> s = t) <=> (t << s) >> s = t *)
 Theorem bvshr_eq : forall (s t : bitvector) (n : N), 
   (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) -> bv_shr x s = t) 
-    (bv_shr (bv_shl t s) s = t).
-Proof.
-Admitted.
+    (exists (x : bitvector), (size x = n) /\ bv_shr_a x s = t) 
+    (bv_shr_a (bv_shl_a t s) s = t).
+Proof. intros s t n Hs Ht.
+       split; intro A.
+       - destruct A as (x, (Hx, A)).
+         rewrite <- A.
+         unfold bv_shl_a, bv_shr_a.
+         rewrite Hx, Hs, N.eqb_refl.
+         unfold size in *. rewrite length_shr_n_bits_a, Hx.
+         rewrite N.eqb_refl.
+         rewrite length_shl_n_bits_a, length_shr_n_bits_a, Hx.
+         rewrite N.eqb_refl.
+         now rewrite shr_n_shl_a.
+       - exists (bv_shl_a t s). split.
+         unfold size, bv_shl_a.
+         rewrite Hs, Ht, N.eqb_refl.
+         now rewrite length_shl_n_bits_a.
+         easy.
+Qed.
 
 (* (exists x, x >> s != t) <=> t != 0 or s <u Nat2BV (size(s)) *)
 Theorem bvshr_neq : forall (s t : bitvector) (n : N), 

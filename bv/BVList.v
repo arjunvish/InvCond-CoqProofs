@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 Require Import List Bool NArith Psatz (*Int63*) ZArith Nnat.
+Require Import Lia.
 (*Require Import Misc.*)
 Import ListNotations.
 Local Open Scope list_scope.
@@ -2730,12 +2731,21 @@ Fixpoint shl_n_bits  (a: list bool) (n: nat): list bool :=
       | S n' => shl_n_bits (shl_one_bit a) n'  
     end.
 
+Definition shl_n_bits_a  (a: list bool) (n: nat): list bool :=
+  if (n <? length a)%nat then mk_list_false n ++ firstn (length a - n) a
+  else mk_list_false (length a).
+
 Definition shl_aux  (a b: list bool): list bool :=
 shl_n_bits a (list2nat_be b).
 
 Definition bv_shl (a b : bitvector) : bitvector :=
   if ((@size a) =? (@size b))
   then shl_aux a b
+  else nil.
+
+Definition bv_shl_a (a b : bitvector) : bitvector :=
+  if ((@size a) =? (@size b))
+  then shl_n_bits_a a (list2nat_be b)
   else nil.
 
 Lemma length_shl_one_bit : forall a, length (shl_one_bit a) = length a.
@@ -2771,6 +2781,22 @@ Proof.
 Qed.
 
 
+Lemma length_shl_n_bits_a: forall n a, length (shl_n_bits_a a n) = length a.
+Proof. intro n.
+       induction n; intros; simpl.
+       - unfold shl_n_bits_a.
+         case_eq a; intros. now cbn. 
+         cbn. rewrite firstn_all. easy.
+       - unfold shl_n_bits_a.         
+         case_eq ( (S n <? length a)%nat); intros. cbn.
+         rewrite app_length, length_mk_list_false.
+         rewrite firstn_length. apply Nat.ltb_lt in H.
+         assert ((Init.Nat.min (length a - S n) (length a))%nat = (length a - S n)%nat).
+         {  lia. }
+         rewrite H0. lia.
+         now rewrite length_mk_list_false.
+Qed.
+
 (* Shift Right (Logical) *)
 
 Definition shr_one_bit (a: list bool) : list bool :=
@@ -2778,6 +2804,10 @@ Definition shr_one_bit (a: list bool) : list bool :=
      | [] => []
      | xa :: xsa => xsa ++ [false]
    end.
+
+Definition shr_n_bits_a (a: list bool) (n: nat): list bool :=
+   if (n <? length a)%nat then skipn n a ++ mk_list_false n 
+   else mk_list_false (length a).
 
 Fixpoint shr_n_bits (a: list bool) (n: nat): list bool :=
     match n with
@@ -2788,10 +2818,94 @@ Fixpoint shr_n_bits (a: list bool) (n: nat): list bool :=
 Definition shr_aux (a b: list bool): list bool :=
 shr_n_bits a (list2nat_be b).
 
+Definition shr_aux_a (a b: list bool): list bool :=
+shr_n_bits_a a (list2nat_be b).
+
 Definition bv_shr (a b : bitvector) : bitvector :=
   if ((@size a) =? (@size b))
   then shr_aux a b
   else nil.
+
+Definition bv_shr_a (a b : bitvector) : bitvector :=
+  if ((@size a) =? (@size b))
+  then shr_n_bits_a a (list2nat_be b)
+  else nil.
+
+Lemma length_skipn: forall n (a: list bool), length (skipn n a) = (length a - n)%nat.
+Proof. intro n.
+       induction n; intros.
+       - cbn. now rewrite <- minus_n_O.
+       - cbn. case_eq a; intros.
+         now cbn.
+         cbn. now rewrite <- IHn.
+Qed.
+
+Lemma help_same: forall a n,
+(n <? length a)%nat = true ->
+firstn (length a - n) (skipn n a ++ false :: false :: mk_list_false n) =
+firstn (length a - n) (skipn n a ++ false :: mk_list_false n).
+Proof. intro a.
+       induction a; intros.
+       - now cbn.
+       - cbn. case_eq n; intros.
+         cbn. f_equal. rewrite !firstn_app, !firstn_all.
+         rewrite Nat.sub_diag. now cbn.
+         cbn. rewrite !firstn_app. f_equal.
+         rewrite length_skipn. 
+         assert ((length a0 - n0 - (length a0 - n0))%nat = 0%nat) by lia.
+         rewrite H1. now cbn.
+Qed.
+
+Lemma fs: forall a n,
+(n <? length a)%nat = true ->
+skipn n (mk_list_false n ++ firstn (length a - n) (skipn n a ++ false :: mk_list_false n)) =
+skipn n a.
+Proof. intro a.
+       induction a; intros.
+       - cbn. now rewrite app_nil_r.
+       - cbn. case_eq n; intros.
+         cbn. rewrite firstn_app.
+         now rewrite Nat.sub_diag, firstn_all, app_nil_r.
+         cbn. specialize (IHa n0).
+         rewrite help_same. apply IHa.
+         apply Nat.ltb_lt in H.
+         apply Nat.ltb_lt. subst. cbn in H. lia.
+         apply Nat.ltb_lt in H.
+         apply Nat.ltb_lt. subst. cbn in H. lia.
+Qed.
+
+Lemma shr_n_shl_a: forall a n,
+  shr_n_bits_a (shl_n_bits_a (shr_n_bits_a a n) n) n = shr_n_bits_a a n.
+Proof. intro a.
+       induction a; intros.
+       - now cbn.
+       - unfold shr_n_bits_a.
+         case_eq ((n <? length (a :: a0))%nat); intros.
+         assert ( length (shl_n_bits_a (skipn n (a :: a0) ++ mk_list_false n) n) = 
+                  length  (a :: a0)).
+         { rewrite length_shl_n_bits_a, app_length, length_mk_list_false, length_skipn.
+           apply Nat.ltb_lt in H.
+           lia.
+         } 
+         rewrite H0, H.
+         unfold shl_n_bits_a.
+         assert ((length (skipn n (a :: a0) ++ mk_list_false n) = length (a :: a0))).
+         { rewrite app_length, length_skipn, length_mk_list_false.
+           apply Nat.ltb_lt in H.
+           lia.
+         }
+         rewrite H1, H. cbn.
+         case_eq n; intros. cbn.
+         assert (firstn (length a0) (a0 ++ []) = a0).
+         { now rewrite app_nil_r, firstn_all. }
+         now rewrite H3.
+         cbn. f_equal. rewrite fs. easy.
+         apply Nat.ltb_lt in H.
+         apply Nat.ltb_lt. subst. cbn in *. lia.
+         assert (length (shl_n_bits_a (mk_list_false (length (a :: a0))) n) = length (a :: a0)).
+         { now rewrite length_shl_n_bits_a, length_mk_list_false. } 
+         now rewrite H0, H.
+Qed.
 
 Lemma length_shr_one_bit: forall a, length (shr_one_bit a) = length a.
 Proof. intro a.
@@ -2799,6 +2913,27 @@ Proof. intro a.
        - now simpl.
        - simpl. rewrite <- IHa.
          case_eq a0; easy.
+Qed.
+
+Lemma length_shr_n_bits_a: forall n a, length (shr_n_bits_a a n) = length a.
+Proof. intro n.
+       induction n; intros; simpl.
+       - unfold shr_n_bits_a.
+         case_eq a; intros. now cbn. 
+         cbn. rewrite app_length. f_equal. easy.
+       - unfold shr_n_bits_a.
+         case_eq ( (S n <? length a)%nat); intros. cbn.
+         case_eq a; intros. subst. cbn in *.
+         now contradict H.
+         unfold shr_n_bits_a. subst.
+         rewrite !app_length. cbn.
+         rewrite length_mk_list_false.
+         rewrite length_skipn. rewrite <- plus_n_Sm.
+         f_equal. rewrite Nat.sub_add; try easy.
+         apply Nat.ltb_lt in H. cbn in H.
+         inversion H. rewrite H1. lia.
+         lia.
+         now rewrite length_mk_list_false.
 Qed.
 
 Lemma length_shr_n_bits: forall n a, length (shr_n_bits a n) = length a.
@@ -2815,7 +2950,6 @@ Proof.
     unfold shr_aux. now rewrite length_shr_n_bits.
 Qed.
 
-
 Lemma bv_shr_size n a b : size a = n -> size b = n -> size (bv_shr a b) = n.
 Proof.
   unfold bv_shr. intros H1 H2. rewrite H1, H2.
@@ -2826,6 +2960,60 @@ Proof.
   now apply (f_equal (N.to_nat)) in H2; rewrite Nat2N.id in H2.
 Qed.
 
+Lemma shl_n_shl_one: forall n a, (shl_n_bits (shl_one_bit a) n) = shl_n_bits a (S n).
+Proof. intro n.
+       induction n; intros.
+       - now cbn.
+       - cbn. now rewrite IHn.
+Qed.
+
+Lemma shr_n_shr_one: forall n a, (shr_n_bits (shr_one_bit a) n) = shr_n_bits a (S n).
+Proof. intro n.
+       induction n; intros.
+       - now cbn.
+       - cbn. now rewrite IHn.
+Qed.
+
+Lemma shr_n_shr_one_comm: forall n a, (shr_n_bits (shr_one_bit a) n) = shr_one_bit (shr_n_bits a n).
+Proof. intro n.
+       induction n; intros.
+       - now cbn.
+       - cbn. now rewrite IHn.
+Qed.
+
+Lemma shl_n_shl_one_comm: forall n a, (shl_n_bits (shl_one_bit a) n) = shl_one_bit (shl_n_bits a n).
+Proof. intro n.
+       induction n; intros.
+       - now cbn.
+       - cbn. now rewrite IHn.
+Qed.
+
+Lemma rl_fact: forall (a: list bool) b, removelast (a ++ [b]) = a.
+Proof. intro a.
+       induction a; intros.
+       - now cbn.
+       - cbn. case_eq (a0 ++ [b]); intros.
+         contradict H.
+         case_eq a0; intros; subst; easy.
+         now rewrite <- H, IHa.
+Qed.
+
+Lemma shl_one_b: forall a b, (shl_one_bit (a ++ [b])) = false :: a.
+Proof. intro a.
+       induction a; intros.
+       - now cbn.
+       - cbn. case_eq (a0 ++ [b]); intros.
+         contradict H.
+         case_eq a0; intros; subst; easy.
+         rewrite <- H. f_equal. f_equal. apply rl_fact.
+Qed. 
+
+Lemma shr_one_shl: forall a, shr_one_bit (shl_one_bit (shr_one_bit a)) = shr_one_bit a.
+Proof. intro a.
+       induction a; intros.
+       - now cbn.
+       - cbn. rewrite shl_one_b. now cbn.
+Qed.
 
 (* Shift Right (Arithmetic) *)
 
@@ -2845,6 +3033,11 @@ Definition ashr_aux (a b: list bool): list bool :=
 ashr_n_bits a (list2nat_be b) (last a false).
 
 Definition bv_ashr (a b : bitvector) : bitvector :=
+  if ((@size a) =? (@size b))
+  then ashr_aux a b
+  else nil.
+
+Definition bv_ashr_a (a b : bitvector) : bitvector :=
   if ((@size a) =? (@size b))
   then ashr_aux a b
   else nil.
