@@ -122,7 +122,7 @@ Admitted.
 
 (*And*)
 (* (exists x, x & s = t) <=> t & s = t*)
-(** BE: please verify this statement *)
+(** BE: Please verify this Coq statement with Andy or Cesare *)
 Theorem bvand_eq : forall (s t : bitvector) (n : N), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ (bv_and x s) = t) 
@@ -160,7 +160,7 @@ Admitted.
 
 (*Or*)
 (* (exists x, x | s = t) <=> t & s = t *)
-(** BE: please verify this statement *)
+(** BE: Please verify this Coq statement with Andy or Cesare *)
 Theorem bvor_eq : forall (s t : bitvector) (n : N), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ (bv_or x s) = t) 
@@ -184,6 +184,7 @@ Admitted.
 
 (*Logical right shift*)
 (* (exists x, x >> s = t) <=> (t << s) >> s = t *)
+(** BE: Please verify this Coq statement with Andy or Cesare *)
 Theorem bvshr_eq : forall (s t : bitvector) (n : N), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ bv_shr x s = t) 
@@ -271,6 +272,7 @@ Admitted.
 
 (*Logical left shift*)
 (* (exists x, x << s = t) <=> (t >> s) << s = t *)
+(** BE: Please verify this Coq statement with Andy or Cesare *)
 Theorem bvshl_eq : forall (s t : bitvector) (n : N),
    (size s) = n -> (size t) = n -> iff
      (exists (x : bitvector), (size x = n) /\ bv_shl x s = t)
@@ -320,14 +322,51 @@ Theorem bvshl_neq2 : forall (s t : bitvector) (n : N),
 Proof.
 Admitted.
 
+Eval compute in length (true :: (false :: nil)).
+
 (*Concat*)
 (* (exists x, x o s = t) <=> s = t[size(s) - 1, 0] *)
-Theorem bvconcat_eq : forall (s t : bitvector) (n : N), 
-  (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) -> (bv_concat x s) = t) 
-    (s = extract t (N.to_nat(size(s)) - 1) (0)).
-Proof.
-Admitted.
+(** BE: Please verify this Coq statement with Andy or Cesare *)
+Theorem bvconcat_eq : forall (s t : bitvector),
+  (size s <= size t)%N ->
+  iff
+  (exists (x : bitvector), (bv_concat x s) = t)
+  (s = bv_extr 0 (size s) (size s) t).
+Proof. intros s t Hc.
+        split; intro A.
+        - destruct A as (x, A).
+           rewrite <- A at 1.
+           unfold bv_concat, bv_extr.
+           case_eq ( (size s <? size s + 0)%N); intros. 
+           contradict H. unfold not. rewrite N.add_0_r.
+           rewrite N.ltb_irrefl. easy.
+           cbn. unfold size.
+           assert (N.to_nat (N.of_nat (length s) + 0) = length s).
+           lia.
+           rewrite H0. now rewrite (extract_app s x).
+        - exists (bv_extr (size s) (size t - (size s)) (size t) t). rewrite A at 3.
+          unfold bv_concat, bv_extr. unfold size.
+          assert ((N.of_nat (length s) <? N.of_nat (length s) + 0)%N = false).
+          { rewrite N.add_0_r, N.ltb_irrefl. easy. }
+          rewrite H.
+          assert ((N.of_nat (length t) <?
+          N.of_nat (length t) - N.of_nat (length s) + N.of_nat (length s))%N = false).
+          assert ((N.of_nat (length t) - N.of_nat (length s) + N.of_nat (length s))%N = N.of_nat (length t)).
+          { rewrite N.sub_add. easy. SearchAbout N.of_nat. easy. }
+          rewrite H0, N.ltb_irrefl. easy. 
+          assert ((N.to_nat (N.of_nat (length s) + 0)) = length s).
+          { rewrite N.add_0_r, Nat2N.id. easy. }
+          rewrite H1.
+          assert ((N.to_nat (N.of_nat (length s))) = length s).
+          { rewrite Nat2N.id. easy. }
+          rewrite H2.
+          assert ((N.of_nat (length t) - N.of_nat (length s) + N.of_nat (length s))%N = N.of_nat (length t)).
+          { rewrite N.sub_add. easy. easy. }
+          rewrite H3, N.ltb_irrefl.
+          assert ((N.to_nat (N.of_nat (length t))) = length t).
+          { rewrite Nat2N.id. easy. }
+          rewrite H4. now rewrite extract_app_all.
+Qed.
 
 (* (exists x, x o s) != t <=> T *)
 Theorem bvconcat_neq : forall (s t : bitvector) (n : N), 
