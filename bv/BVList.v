@@ -25,6 +25,8 @@ Local Open Scope bool_scope.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+From Hammer Require Import Hammer Reconstr.
+
 (* We temporarily assume proof irrelevance to handle dependently typed
    bit vectors *)
 Axiom proof_irrelevance : forall (P : Prop) (p1 p2 : P), p1 = p2.
@@ -3281,6 +3283,107 @@ Proof. intros.
        case_eq (size a =? size b); intros; try easy.
        unfold shr_aux. now rewrite bv_shr_aux_eq.
 Qed.
+
+Lemma shl_one: forall a, a <> nil -> shl_one_bit a = false :: removelast a.
+Proof. intros. unfold shl_one_bit.
+       induction a; intros.
+       - now contradict H.
+       - easy.
+Qed.
+
+Lemma shl_one_bit_app: forall a b,
+  b <> nil ->
+  shl_one_bit (a ++ b) = false :: a ++ removelast b.
+Proof. intro a.
+       induction a; intros.
+       - cbn. rewrite shl_one; easy.
+       - cbn. case_eq a0; case_eq b; intros.
+         subst. now contradict H.
+         subst. rewrite !app_nil_l. easy.
+         subst. now contradict H.
+         subst. rewrite <- app_comm_cons.
+         f_equal. f_equal.
+         rewrite <- removelast_app. easy. easy.
+Qed.
+
+Lemma removelast_one: forall (a: list bool),
+ removelast (firstn 1 a) = nil.
+Proof. intro a.
+       induction a; intros; now cbn.
+Qed.
+
+Lemma shl_one_bit_all_false: forall (a: list bool),
+shl_one_bit (mk_list_false (length a)) = mk_list_false (length a).
+Proof. intro a. unfold shl_one_bit.
+       induction a; intros.
+       - now cbn.
+       - cbn in *. Reconstr.reasy Reconstr.Empty Reconstr.Empty.
+Qed.
+
+Lemma firstn_neq_nil: forall n (a: list bool),
+a <> nil -> (n%nat <> 0%nat) -> firstn n a <> [].
+Proof. intro n.
+       induction n; intros.
+       - cbn in *. easy.
+       - Reconstr.reasy Reconstr.Empty (@Coq.Lists.List.firstn).
+Qed.
+
+Theorem bv_shl_aux_eq: forall n a, shl_n_bits a n = shl_n_bits_a a n.
+Proof. intro n.
+       induction n; intros.
+       - cbn. case_eq a; intros. now cbn.
+         cbn. now rewrite firstn_all.
+       - cbn. rewrite shl_n_shl_one_comm, IHn.
+         unfold shl_n_bits_a.
+         case_eq ((S n <? length a)%nat); intros.
+         assert ((n <? length a)%nat = true).
+         { apply Nat.ltb_lt in H.
+           apply Nat.ltb_lt. lia.
+         }
+         rewrite H0. cbn. case_eq a; intros.
+         subst. cbn in *. now contradict H.
+         rewrite shl_one_bit_app.
+         f_equal. f_equal.
+         set (m := (length (b :: l) - S n)%nat).
+         assert (((length (b :: l) - n)%nat = (S m)%nat)).
+         { unfold m in *.
+           case_eq n; intros. cbn. now rewrite Nat.sub_0_r.
+           cbn.
+           Reconstr.rcrush (@Coq.Arith.PeanoNat.Nat.ltb_lt,
+           @Coq.Arith.PeanoNat.Nat.sub_succ, @Coq.Init.Peano.le_S_n,
+           @Coq.Arith.Minus.minus_Sn_m) (@Coq.Init.Peano.lt, @Coq.Init.Datatypes.length).
+         }
+         rewrite H2, removelast_firstn. easy.
+         unfold m.
+         Reconstr.rexhaustive1 (@Coq.Arith.PeanoNat.Nat.le_sub_l) (@Coq.Init.Peano.lt, @m).
+         cbn. case_eq n; intros. subst; cbn in *. easy.
+         subst. apply Nat.ltb_lt in H. apply Nat.ltb_lt in H0.
+         apply firstn_neq_nil. easy.
+         Reconstr.rcrush (@Coq.Arith.PeanoNat.Nat.sub_gt,
+           @Coq.Arith.PeanoNat.Nat.sub_succ) (@Coq.Init.Datatypes.length).
+         case_eq ((n <? length a)%nat); intros.
+         assert (length a = S n).
+         { apply Nat.ltb_lt in H0.
+           apply Nat.ltb_ge in H.
+           lia.
+         } rewrite H1.
+         rewrite shl_one_bit_app.
+         assert ((S n - n)%nat = 1%nat) by lia.
+         rewrite H2, removelast_one, app_nil_r. easy.
+         apply firstn_neq_nil.
+         Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.length).
+         lia.
+         now rewrite shl_one_bit_all_false.
+Qed.
+
+Theorem bv_shl_eq: forall (a b : bitvector),
+  bv_shl a b = bv_shl_a a b.
+Proof. intros.
+       unfold bv_shl, bv_shl_a.
+       case_eq (size a =? size b); intros; try easy.
+       unfold shl_aux. now rewrite bv_shl_aux_eq.
+Qed.
+
 
 End RAWBITVECTOR_LIST.
 

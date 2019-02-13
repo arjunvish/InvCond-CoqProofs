@@ -186,12 +186,13 @@ Admitted.
 (* (exists x, x >> s = t) <=> (t << s) >> s = t *)
 Theorem bvshr_eq : forall (s t : bitvector) (n : N), 
   (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) /\ bv_shr_a x s = t) 
-    (bv_shr_a (bv_shl_a t s) s = t).
+    (exists (x : bitvector), (size x = n) /\ bv_shr x s = t) 
+    (bv_shr (bv_shl t s) s = t).
 Proof. intros s t n Hs Ht.
        split; intro A.
        - destruct A as (x, (Hx, A)).
          rewrite <- A.
+         rewrite !bv_shr_eq, bv_shl_eq.
          unfold bv_shl_a, bv_shr_a.
          rewrite Hx, Hs, N.eqb_refl.
          unfold size in *. rewrite length_shr_n_bits_a, Hx.
@@ -203,6 +204,8 @@ Proof. intros s t n Hs Ht.
          unfold size, bv_shl_a.
          rewrite Hs, Ht, N.eqb_refl.
          now rewrite length_shl_n_bits_a.
+         rewrite bv_shr_eq.
+         rewrite bv_shr_eq, bv_shl_eq in A.
          easy.
 Qed.
 
@@ -270,12 +273,13 @@ Admitted.
 (* (exists x, x << s = t) <=> (t >> s) << s = t *)
 Theorem bvshl_eq : forall (s t : bitvector) (n : N),
    (size s) = n -> (size t) = n -> iff
-     (exists (x : bitvector), (size x = n) /\ bv_shl_a x s = t)
-     (bv_shl_a (bv_shr_a t s) s = t).
+     (exists (x : bitvector), (size x = n) /\ bv_shl x s = t)
+     (bv_shl (bv_shr t s) s = t).
 Proof. intros s t n Hs Ht.
         split; intro A.
         - destruct A as (x, (Hx, A)).
           rewrite <- A.
+          rewrite bv_shr_eq, !bv_shl_eq.
           unfold bv_shl_a, bv_shr_a.
           rewrite Hx, Hs, N.eqb_refl.
           unfold size in *. rewrite length_shl_n_bits_a, Hx.
@@ -287,6 +291,8 @@ Proof. intros s t n Hs Ht.
           unfold size, bv_shr_a.
          rewrite Hs, Ht, N.eqb_refl.
          now rewrite length_shr_n_bits_a.
+         rewrite bv_shr_eq, bv_shl_eq in A.
+         rewrite bv_shl_eq.
          easy.
 Qed.
 
