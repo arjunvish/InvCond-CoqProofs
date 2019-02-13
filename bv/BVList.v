@@ -2907,13 +2907,17 @@ Proof. intro a.
          now rewrite H0, H.
 Qed.
 
-Lemma skipn_all: forall (A: Type) n (l: list A), length l = n -> skipn n l = [].
+Lemma skipn_all: forall (A: Type) n (l: list A), ((length l <=? n)%nat = true)-> skipn n l = [].
 Proof. intros A n.
        induction n; intros.
-       - cbn. now apply length_zero_iff_nil in H.
+       - cbn. assert (length l = 0%nat).
+         { apply Nat.leb_le in H. lia. }
+         now apply length_zero_iff_nil in H0.
        - cbn. case_eq l; intros.
          + easy.
-         + apply IHn. subst. cbn in H. lia.
+         + apply IHn. subst. cbn in H.
+         apply Nat.leb_le in H.
+         apply Nat.leb_le. lia.
 Qed.
 
 (* skipn n0 (mk_list_false n0 ++ firstn (length a0 - n0) (a :: a0)) = firstn (length a0 - n0) (a :: a0)
@@ -3154,6 +3158,129 @@ Proof.
   Qed.
 
 
+Lemma skip_n_one_bit: forall n l b,
+((n <? length (b :: l))%nat = true) ->
+shr_one_bit (skipn n (b :: l)) =  skipn n l ++ [false].
+Proof. intro n.
+       induction n; intros.
+       - now cbn.
+       - cbn. case_eq l; intros. subst. cbn in *.
+         now contradict H.
+         rewrite <- (IHn l0 b0). easy.
+         apply Nat.ltb_lt in H.
+         apply Nat.ltb_lt. subst. cbn in *. lia.
+Qed.
+
+Lemma mk_list_false_cons: forall n,
+mk_list_false n ++ [false] = false :: mk_list_false n.
+Proof. intro n.
+       induction n; intros.
+       now cbn.
+       cbn. now rewrite <- IHn.
+Qed.
+
+Lemma shr_one_bit_append_false: forall a n,
+shr_one_bit (a ++ (mk_list_false n)) = (shr_one_bit a) ++ (mk_list_false n).
+Proof. intro a.
+       induction a; intros.
+       - cbn. case_eq n; intros.
+         now cbn. cbn. now rewrite mk_list_false_cons.
+       - cbn. rewrite !app_assoc_reverse.
+         assert (mk_list_false n ++ [false] = [false] ++ mk_list_false n).
+         { cbn. induction n; intros.
+           now cbn. cbn.
+           now rewrite <- IHn.
+         } now rewrite H. 
+Qed.
+
+Lemma shr_one_bit_skipn_false1: forall n a,
+length a = S n -> shr_one_bit (skipn n a) = [false].
+Proof. intro n.
+       induction n; intros.
+       - cbn. case_eq a; intros. subst.
+         now contradict H.
+         cbn. assert (l = nil).
+         subst. cbn in *. inversion H.
+         apply length_zero_iff_nil in H1.
+         now subst. 
+         now rewrite H1, app_nil_l.
+       - cbn. case_eq a; intros.
+         subst. now contradict H.
+         apply IHn. subst. cbn in H. lia.
+Qed.
+
+Lemma shr_one_bit_skipn_false: forall n a,
+length a = S n ->
+shr_one_bit (skipn n a ++ mk_list_false n) = mk_list_false n ++ [false].
+Proof. intro n.
+       induction n; intros.
+       - cbn. rewrite app_nil_r. case_eq a; intros.
+         subst. now contradict H.
+         subst. cbn in *. inversion H.
+         apply length_zero_iff_nil in H1.
+         subst. now rewrite app_nil_l. 
+       - cbn. case_eq a; intros.
+         subst. now contradict H.
+         rewrite <- (IHn l).
+         rewrite shr_one_bit_append_false.
+         assert (false :: mk_list_false n = mk_list_false (S n)).
+         { easy. }
+         rewrite H1, shr_one_bit_append_false.
+         cbn. rewrite shr_one_bit_skipn_false1. easy.
+         subst. cbn in *. lia.
+         subst. cbn in *. lia.
+Qed.
+
+Lemma shr_one_bit_all_false: forall (a: list bool),
+shr_one_bit (mk_list_false (length a)) = mk_list_false (length a).
+Proof. intro a.
+       induction a; intros.
+       - now cbn.
+       - cbn. now rewrite mk_list_false_cons.
+Qed.
+
+Theorem bv_shr_aux_eq: forall n a, shr_n_bits a n = shr_n_bits_a a n.
+Proof. intro n.
+       induction n; intros.
+       - cbn. case_eq a; intros. now cbn.
+         cbn. now rewrite app_nil_r.
+       - cbn. rewrite shr_n_shr_one_comm, IHn.
+         unfold shr_n_bits_a.
+         case_eq ((S n <? length a)%nat); intros.
+         assert ((n <? length a)%nat = true).
+         { apply Nat.ltb_lt in H.
+           apply Nat.ltb_lt. lia.
+         }
+         rewrite H0. cbn. case_eq a; intros.
+         subst. cbn in *. now contradict H.
+         cbn.
+         assert (skipn n l ++ false :: mk_list_false n = skipn n l ++ [false] ++ mk_list_false n).
+         { easy. }
+         rewrite H2.
+         rewrite app_assoc.
+         specialize (@skip_n_one_bit n l b); intros.
+         rewrite <- H3.
+         rewrite shr_one_bit_append_false. easy.
+         apply Nat.ltb_lt in H.
+         apply Nat.ltb_lt. subst. cbn in *. lia.
+         case_eq ((n <? length a)%nat); intros.
+         assert (length a = S n).
+         { apply Nat.ltb_lt in H0.
+           apply Nat.ltb_ge in H.
+           lia.
+         } rewrite H1, shr_one_bit_skipn_false; try easy.
+         cbn. 
+         now rewrite mk_list_false_cons.
+         now rewrite shr_one_bit_all_false.
+Qed.
+
+Theorem bv_shr_eq: forall (a b : bitvector),
+  bv_shr a b = bv_shr_a a b.
+Proof. intros.
+       unfold bv_shr, bv_shr_a.
+       case_eq (size a =? size b); intros; try easy.
+       unfold shr_aux. now rewrite bv_shr_aux_eq.
+Qed.
 
 End RAWBITVECTOR_LIST.
 
