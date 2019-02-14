@@ -25,7 +25,7 @@ Local Open Scope bool_scope.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-(* From Hammer Require Import Hammer Reconstr. *)
+(* From Hammer Require Import Hammer Reconstr.  *)
 
 (* We temporarily assume proof irrelevance to handle dependently typed
    bit vectors *)
@@ -1236,6 +1236,15 @@ Proof. intros a. induction a as [ | a' xs IHxs].
            apply IHxs. rewrite <- orb_assoc. rewrite orb_diag. reflexivity. 
 Qed.
 
+Lemma map2_or_neg_true:  forall (a: list bool), (map2 orb (map negb a) a) = mk_list_true (length a).
+Proof. intro a.
+       induction a; intros.
+       - now cbn.
+       - cbn.
+         assert (negb a || a = true).
+         case a; easy.
+         now rewrite H, IHa.
+Qed.
 
 (*bitvector OR properties*)
 

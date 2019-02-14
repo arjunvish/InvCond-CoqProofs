@@ -42,8 +42,6 @@ Proof.
   Qed. 
 (* End Practice *)
 
-
-
 (*Addition*)
 (* (exists x, x + s = t) <=> T *)
 Theorem bvadd : forall (s t : bitvector) (n : N), 
@@ -79,14 +77,49 @@ Proof. intros s t n (Hs, Ht).
   split; [exact (bv_subt'_size Ht Hs) | exact (bv_add_subst_opp Ht Hs)].
 Qed.
 
-
 (*Multiplication*)
 (* (exists x, x.s = t) <=> (-s | s) & t = t *)
 Theorem bvmult_eq : forall (s t : bitvector) (n : N), 
   (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) -> (bv_mult x s) = t) 
+    (exists (x : bitvector), (size x = n) /\ (bv_mult x s) = t) 
     ((bv_and (bv_or (bv_not s) s) t) = t).
-Proof.
+Proof. intros s t n Hs Hn.
+       split; intro A.
+       - destruct A as (x, (Hx, A)).
+         rewrite <- A.
+         unfold bv_or, bv_not, bv_and, bv_mult.
+         unfold bits, size in *. rewrite Hx, Hs, N.eqb_refl.
+         assert ((N.of_nat (length (map negb s))%N =? n%N)%N = true).
+         { unfold negb. rewrite map_length. apply N.eqb_eq.
+           easy.
+         }
+         rewrite H.
+         assert (length (mult_list x s) = (length s)).
+         { unfold mult_list, bvmult_bool.
+           case_eq (length x).
+           intros. rewrite and_with_bool_len.
+           lia.
+           intros n0 Hn0. 
+           case n0 in *. rewrite and_with_bool_len.
+           lia.
+           rewrite prop_mult_bool_step. rewrite and_with_bool_len.
+           lia.
+         }
+         assert ((N.of_nat (length (map2 orb (map negb s) s)) =?
+                  N.of_nat (length (mult_list x s)))%N = true).
+         { erewrite <- map2_or_length, map_length.
+           now rewrite H0, N.eqb_refl.
+           now rewrite map_length.
+          }
+         rewrite H0. rewrite map2_or_neg_true, map2_and_comm.
+         rewrite length_mk_list_true, N.eqb_refl.
+         now rewrite <- H0, map2_and_1_neutral.
+        - admit. (** BE: this case needs unsigned division
+                     which is not yet there in the library.
+                     The file "th_bv_bitblast.plf" does not
+                     contain the signature of bvudiv, please
+                     contact Andy asking where to find that
+                     signature... *)
 Admitted.
 
 (* (exists x, x.s != t) <=> s != 0 or t != 0 *)
