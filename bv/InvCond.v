@@ -258,10 +258,13 @@ Proof.
 Admitted.
 
 (* (exists x, s >> x = t) <=> [i=0...size(s)]OR(s >> i = t) *)
-(*Theorem bvshr_eq2 : forall (s t : bitvector) (n : N), 
+Theorem bvshr_eq2 : forall (s t : bitvector) (n : N), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ bv_shr s x = t)
-    (Need a way to quantify over integers i...size(s))*)
+    (exists (i : nat), 
+      i >= 0 /\ 
+      i <= (N.to_nat (size s)) /\ 
+      ((bv_shr s (nat2bv i (N.to_nat (size s)))) = t)).
 
 (* (exists x, s >> x != t) <=> s != 0 or t != 0 *)
 Theorem bvshr_neq2 : forall (s t : bitvector) (n : N), 
@@ -280,6 +283,7 @@ Admitted.
     and 
     (s >=u size(s) => (t = ~0 or t = 0)) *)
 
+
 (* (exists x, x >>a s != t) <=> T *)
 Theorem bvashr_neq : forall (s t : bitvector) (n : N), 
   (size s) = n -> (size t) = n -> iff 
@@ -289,6 +293,15 @@ Proof.
 Admitted.
 
 (* (exists x, s >>a x = t) <=> [i=0...size(s)OR(s >>a i = t) *)
+Theorem bvashr_eq2 : forall (s t : bitvector) (n : N), 
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ashr s x = t))
+    (exists (i : nat), 
+      (i >= 0) /\ 
+      (i <= (N.to_nat (size s))) /\
+      ((bv_ashr s (nat2bv i (N.to_nat (size s)))) = t)).
+Proof.
+Admitted.
 
 (* (exists x, s >>a x != t) 
     <=> 
@@ -346,6 +359,15 @@ Proof.
 Admitted.
 
 (* (exists x, s << x = t) <=> [i=0...size(s)]OR(s << i = t)  *)
+Theorem bvshl_eq2 : forall (s t : bitvector) (n : N), 
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_shl s x = t))
+    (exists (i : nat), 
+      (i >= 0) /\ 
+      (i <= (N.to_nat (size s))) /\
+      ((bv_shl s (nat2bv i (N.to_nat (size s)))) = t)).
+Proof.
+Admitted.
 
 (* (exists x, s << x != t) <=> s != 0 or or t != 0 *)
 Theorem bvshl_neq2 : forall (s t : bitvector) (n : N), 
