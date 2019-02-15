@@ -251,7 +251,7 @@ Theorem bvshr_neq : forall (s t : bitvector) (n : N),
       \/
       ((bv_ult s (nat2bv 
                   (N.to_nat (size s)) 
-                  (N.to_nat (size s))))) 
+                  ((size s))))) 
       = 
       true).
 Proof.
@@ -264,7 +264,9 @@ Theorem bvshr_eq2 : forall (s t : bitvector) (n : N),
     (exists (i : nat), 
       i >= 0 /\ 
       i <= (N.to_nat (size s)) /\ 
-      ((bv_shr s (nat2bv i (N.to_nat (size s)))) = t)).
+      ((bv_shr s (nat2bv i (size s))) = t)).
+Proof. Admitted.
+
 
 (* (exists x, s >> x != t) <=> s != 0 or t != 0 *)
 Theorem bvshr_neq2 : forall (s t : bitvector) (n : N), 
@@ -299,7 +301,7 @@ Theorem bvashr_eq2 : forall (s t : bitvector) (n : N),
     (exists (i : nat), 
       (i >= 0) /\ 
       (i <= (N.to_nat (size s))) /\
-      ((bv_ashr s (nat2bv i (N.to_nat (size s)))) = t)).
+      ((bv_ashr s (nat2bv i (size s))) = t)).
 Proof.
 Admitted.
 
@@ -352,7 +354,7 @@ Theorem bvshl_neq : forall (s t : bitvector) (n : N),
      \/
      ((bv_ult s (nat2bv 
                   (N.to_nat (size s))
-                  (N.to_nat (size s)))))
+                  (size s))))
       =
       true).
 Proof.
@@ -365,7 +367,7 @@ Theorem bvshl_eq2 : forall (s t : bitvector) (n : N),
     (exists (i : nat), 
       (i >= 0) /\ 
       (i <= (N.to_nat (size s))) /\
-      ((bv_shl s (nat2bv i (N.to_nat (size s)))) = t)).
+      ((bv_shl s (nat2bv i (size s))) = t)).
 Proof.
 Admitted.
 

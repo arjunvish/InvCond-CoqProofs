@@ -2728,18 +2728,22 @@ Fixpoint _list2nat_be (a: list bool) (n i: nat) : nat :=
 
 Definition list2nat_be (a: list bool) := _list2nat_be a 0 0.
 
+Definition bv2nat (a: list bool) := list2nat_be a.
 
 (*Nat -> BV Conversion *)
 
-Fixpoint nat2bv_aux (n : nat) (acc : list bool) :=
+(* BE: that seems incorrect?
+   To test if the function works as expected, please
+   run "Eval compute in fun_name args."
+
+ Fixpoint nat2bv_aux (n : nat) (acc : list bool) :=
   match n with
   | O => acc
   | S n' => match ((N.of_nat n) mod 2) with
-            | 0 => nat2bv_aux n' (acc ++ [false])
-            | _ => nat2bv_aux n' (acc ++ [true])
+            | 0 => nat2bv_aux n' (acc ++ [true])
+            | _ => nat2bv_aux n' (acc ++ [false])
             end
   end.
-
 
 Fixpoint pad (bv : list bool) (diff : nat) :=
   match diff with
@@ -2752,7 +2756,21 @@ Definition pad_to (size : nat) (bv : list bool) : list bool :=
 
 Definition nat2bv (n : nat) (size : nat) : bitvector :=
   pad_to size (nat2bv_aux n nil).
+ *)
 
+Fixpoint pos2list (n: positive) acc :=
+  match n with
+    | xI m => pos2list m (acc ++ [true])
+    | xO m => pos2list m (acc ++ [false])
+    | xH => (acc ++ [true])
+  end.
+
+Fixpoint padding l n :=
+  if (n <=? (length l)%nat)%nat then List.rev (firstn n (List.rev l))
+  else l ++ mk_list_false (n - (length l)).
+
+Definition nat2bv (n : nat) (size : N): bitvector :=
+  padding (pos2list (Pos.of_nat n) []) (N.to_nat size).
 
 (* Shift Left *)
 
