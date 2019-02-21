@@ -44,12 +44,12 @@ Proof.
 
 (*Addition*)
 (* (exists x, x + s = t) <=> T *)
-Theorem bvadd : forall (s t : bitvector) (n : N), 
+Theorem bvadd : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ ((bv_add x s) = t))
     True.
 Proof. 
-    intros s t n Hs Ht.
+    intros n s t Hs Ht.
     split; intro A.
     - easy.
     - exists (bv_subt' t s).
@@ -59,31 +59,31 @@ Proof.
 Qed.
 
 (** BE: keep this; may be of use *)
-Theorem bvadd_U:
-  forall (s t x: bitvector) n, (size s) = n /\ (size t) = n /\ (size x) = n ->
+Theorem bvadd_U: forall (n : N),
+  forall (s t x: bitvector), (size s) = n /\ (size t) = n /\ (size x) = n ->
   (bv_add x s) = t <-> (x = (bv_subt' t s)).
-Proof. intros s t x n (Hs, (Ht, Hx)).
+Proof. intros n s t x (Hs, (Ht, Hx)).
   split; intro A.
   - rewrite <- A. symmetry. exact (@bv_subt'_add n x s Hx Hs).
   - rewrite A. exact (bv_add_subst_opp Ht Hs).
 Qed.
 
 (** BE: the same with bvadd *)
-Theorem bvadd_e:
-  forall (s t : bitvector) n, (size s) = n /\ (size t) = n ->
+Theorem bvadd_e: forall (n : N),
+  forall (s t : bitvector), (size s) = n /\ (size t) = n ->
   exists (x : bitvector), (size x) = n /\ (bv_add x s) = t.
-Proof. intros s t n (Hs, Ht).
+Proof. intros n s t (Hs, Ht).
   exists (bv_subt' t s).
   split; [exact (bv_subt'_size Ht Hs) | exact (bv_add_subst_opp Ht Hs)].
 Qed.
 
 (*Multiplication*)
 (* (exists x, x.s = t) <=> (-s | s) & t = t *)
-Theorem bvmult_eq : forall (s t : bitvector) (n : N), 
+Theorem bvmult_eq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ (bv_mult x s) = t) 
     ((bv_and (bv_or (bv_not s) s) t) = t).
-Proof. intros s t n Hs Hn.
+Proof. intros n s t Hs Hn.
        split; intro A.
        - destruct A as (x, (Hx, A)).
          rewrite <- A.
@@ -123,7 +123,7 @@ Proof. intros s t n Hs Hn.
 Admitted.
 
 (* (exists x, x.s != t) <=> s != 0 or t != 0 *)
-Theorem bvmult_neq : forall (s t : bitvector) (n : N), 
+Theorem bvmult_neq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) -> ~((bv_mult x s) = t)) 
     ((~(s = zeros (size s))) \/ (~(t = zeros (size t)))).
@@ -155,12 +155,11 @@ Admitted.
 
 (*And*)
 (* (exists x, x & s = t) <=> t & s = t*)
-(** BE: Please verify this Coq statement with Andy or Cesare *)
-Theorem bvand_eq : forall (s t : bitvector) (n : N), 
+Theorem bvand_eq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ (bv_and x s) = t) 
     ((bv_and t s) = t).
-Proof. intros s t n Hs Ht.
+Proof. intros n s t Hs Ht.
        split; intro A.
        - destruct A as (x, (Hx, A)). rewrite <- A.
          now rewrite (@bv_and_comm n x s Hx Hs), (@bv_and_idem1 s x n Hs Hx).
@@ -172,11 +171,11 @@ Qed.
 
 (* (exists x, x & s != t) <=> s != 0 or t != 0 *)
 (** BE: statement incorrect? *)
-Theorem bvand_neq : forall (s t : bitvector) (n : N), 
+Theorem bvand_neq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ (bv_and x s) <> t) 
     (s <> zeros (size s) \/ t <> zeros (size t)).
-Proof. intros s t n Hs Ht.
+Proof. intros n s t Hs Ht.
        split; intro A. destruct A as (x, (Hx, A)).
        unfold not in *.
        left. intro HS. apply A.
@@ -193,12 +192,11 @@ Admitted.
 
 (*Or*)
 (* (exists x, x | s = t) <=> t & s = t *)
-(** BE: Please verify this Coq statement with Andy or Cesare *)
-Theorem bvor_eq : forall (s t : bitvector) (n : N), 
+Theorem bvor_eq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ (bv_or x s) = t) 
     ((bv_or t s) = t).
-Proof. intros s t n Hs Ht.
+Proof. intros n s t Hs Ht.
        split; intro A.
        - destruct A as (x, (Hx, A)). rewrite <- A.
          now rewrite (@bv_or_idem2 x s n Hx Hs).
@@ -206,7 +204,7 @@ Proof. intros s t n Hs Ht.
 Qed.
 
 (* (exists x, x | s != t) <=> s != ~0 or t != ~0 *)
-Theorem bvor_neq : forall (s t : bitvector) (n : N), 
+Theorem bvor_neq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) -> ~((bv_or x s) = t)) 
     (~(s = (bv_not (zeros (size s)))) 
@@ -217,12 +215,11 @@ Admitted.
 
 (*Logical right shift*)
 (* (exists x, x >> s = t) <=> (t << s) >> s = t *)
-(** BE: Please verify this Coq statement with Andy or Cesare *)
-Theorem bvshr_eq : forall (s t : bitvector) (n : N), 
+Theorem bvshr_eq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ bv_shr x s = t) 
     (bv_shr (bv_shl t s) s = t).
-Proof. intros s t n Hs Ht.
+Proof. intros n s t Hs Ht.
        split; intro A.
        - destruct A as (x, (Hx, A)).
          rewrite <- A.
@@ -244,32 +241,33 @@ Proof. intros s t n Hs Ht.
 Qed.
 
 (* (exists x, x >> s != t) <=> t != 0 or s <u Nat2BV (size(s)) *)
-Theorem bvshr_neq : forall (s t : bitvector) (n : N), 
+Theorem bvshr_neq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ ~(bv_shr x s = t))
     (~(t = zeros (size t)) 
       \/
       ((bv_ult s (nat2bv 
                   (N.to_nat (size s)) 
-                  ((size s))))) 
+                  (N.to_nat (size s))))) 
       = 
       true).
 Proof.
 Admitted.
 
 (* (exists x, s >> x = t) <=> [i=0...size(s)]OR(s >> i = t) *)
-Theorem bvshr_eq2 : forall (s t : bitvector) (n : N), 
+Theorem bvshr_eq2 : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ bv_shr s x = t)
     (exists (i : nat), 
       i >= 0 /\ 
       i <= (N.to_nat (size s)) /\ 
-      ((bv_shr s (nat2bv i (size s))) = t)).
-Proof. Admitted.
+      ((bv_shr s (nat2bv i (N.to_nat (size s)))) = t)).
+Proof. 
+Admitted.
 
 
 (* (exists x, s >> x != t) <=> s != 0 or t != 0 *)
-Theorem bvshr_neq2 : forall (s t : bitvector) (n : N), 
+Theorem bvshr_neq2 : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ ~(bv_shr s x = t))
     (~(s = zeros (size s))
@@ -287,7 +285,7 @@ Admitted.
 
 
 (* (exists x, x >>a s != t) <=> T *)
-Theorem bvashr_neq : forall (s t : bitvector) (n : N), 
+Theorem bvashr_neq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ ~(bv_ashr x s = t))
     True.
@@ -295,20 +293,20 @@ Proof.
 Admitted.
 
 (* (exists x, s >>a x = t) <=> [i=0...size(s)OR(s >>a i = t) *)
-Theorem bvashr_eq2 : forall (s t : bitvector) (n : N), 
+Theorem bvashr_eq2 : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff
     (exists (x : bitvector), (size x = n) /\ (bv_ashr s x = t))
     (exists (i : nat), 
       (i >= 0) /\ 
       (i <= (N.to_nat (size s))) /\
-      ((bv_ashr s (nat2bv i (size s))) = t)).
+      ((bv_ashr s (nat2bv i (N.to_nat (size s)))) = t)).
 Proof.
 Admitted.
 
 (* (exists x, s >>a x != t) 
     <=> 
   (t != 0 or s!= 0) and (t != ~0 or s !- ~0) *)
-Theorem bvashr_neq2 : forall (s t : bitvector) (n : N), 
+Theorem bvashr_neq2 : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ ~(bv_ashr s x = t))
     ((~(t = zeros (size t)) \/ ~(s = zeros (size s)))
@@ -320,12 +318,11 @@ Admitted.
 
 (*Logical left shift*)
 (* (exists x, x << s = t) <=> (t >> s) << s = t *)
-(** BE: Please verify this Coq statement with Andy or Cesare *)
-Theorem bvshl_eq : forall (s t : bitvector) (n : N),
+Theorem bvshl_eq : forall (n : N), forall (s t : bitvector),
    (size s) = n -> (size t) = n -> iff
      (exists (x : bitvector), (size x = n) /\ bv_shl x s = t)
      (bv_shl (bv_shr t s) s = t).
-Proof. intros s t n Hs Ht.
+Proof. intros n s t Hs Ht.
         split; intro A.
         - destruct A as (x, (Hx, A)).
           rewrite <- A.
@@ -347,32 +344,32 @@ Proof. intros s t n Hs Ht.
 Qed.
 
 (* (exists x, x << s != t) <=> t != 0 or s <u size(s) *)
-Theorem bvshl_neq : forall (s t : bitvector) (n : N), 
+Theorem bvshl_neq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ ~(bv_shl x s = t))
     (~(t = zeros (size t))
      \/
      ((bv_ult s (nat2bv 
                   (N.to_nat (size s))
-                  (size s))))
+                  (N.to_nat (size s)))))
       =
       true).
 Proof.
 Admitted.
 
 (* (exists x, s << x = t) <=> [i=0...size(s)]OR(s << i = t)  *)
-Theorem bvshl_eq2 : forall (s t : bitvector) (n : N), 
+Theorem bvshl_eq2 : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff
     (exists (x : bitvector), (size x = n) /\ (bv_shl s x = t))
     (exists (i : nat), 
       (i >= 0) /\ 
       (i <= (N.to_nat (size s))) /\
-      ((bv_shl s (nat2bv i (size s))) = t)).
+      ((bv_shl s (nat2bv i (N.to_nat (size s)))) = t)).
 Proof.
 Admitted.
 
 (* (exists x, s << x != t) <=> s != 0 or or t != 0 *)
-Theorem bvshl_neq2 : forall (s t : bitvector) (n : N), 
+Theorem bvshl_neq2 : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ ~(bv_shl s x = t))
     (~(s = zeros (size s)) \/ ~(t = zeros (size t))).
@@ -426,20 +423,15 @@ Proof. intros s t Hc.
 Qed.
 
 (* (exists x, x o s) != t <=> T *)
-Theorem bvconcat_neq : forall (s t : bitvector) (n : N), 
+Theorem bvconcat_neq : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ ~((bv_concat x s) = t)) 
     (True).
 Proof.
-intros s t. (*exists (nil : list bool).
-split. 
-- intros H. reflexivity.
-- intros H. unfold bv_concat.
-  induction s as [| hs ts IHs].
-  + simpl. *)Admitted.
+Admitted.
 
 (* (exists x, s o x = t) <=> s = t[size(t) - 1 : size(t) - size(s)] *)
-Theorem bvconcat_eq2 : forall (s t : bitvector) (n : N), 
+Theorem bvconcat_eq2 : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ (bv_concat s x) = t) 
     (s = extract t 
@@ -449,12 +441,9 @@ Proof.
 Admitted.
 
 (* (exists x, s o x != t) <=> T *)
-Theorem bvconcat_neq2 : forall (s t : bitvector) (n : N), 
+Theorem bvconcat_neq2 : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ ~((bv_concat s x) = t)) 
     (True).
 Proof.
-intros s t. (*eapply ex_intro.
-split.
-- intros H. reflexivity.
-- intros H.*) Admitted.
+Admitted.
