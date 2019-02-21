@@ -282,7 +282,22 @@ Admitted.
   (s <u size(s) => (t << s) >>a s = t) 
     and 
     (s >=u size(s) => (t = ~0 or t = 0)) *)
-
+Theorem bvashr_eq : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ashr x s = t))
+    ((((bv_ult 
+          s 
+          (nat2bv (N.to_nat (size s)) (N.to_nat (size s)))) 
+        = true) 
+      ->  (bv_ashr (bv_shl t s) s) = t)
+                        /\
+     (((bv_ult 
+          s 
+          (nat2bv (N.to_nat (size s)) (N.to_nat (size s)))) 
+        = false) 
+      ->  (t = bv_not (zeros (size t))) \/ (t = (zeros (size t))))).
+Proof.
+Admitted.
 
 (* (exists x, x >>a s != t) <=> T *)
 Theorem bvashr_neq : forall (n : N), forall (s t : bitvector), 
