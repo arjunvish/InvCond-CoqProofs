@@ -24,8 +24,7 @@ Local Open Scope bool_scope.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
-
-(* From Hammer Require Import Hammer Reconstr.  *)
+From Hammer Require Import Hammer Reconstr.
 
 (* We temporarily assume proof irrelevance to handle dependently typed
    bit vectors *)
@@ -2732,8 +2731,6 @@ Fixpoint list2N (a: list bool) (p: N) :=
     | x ::  xs => if x then N.succ_double (list2N xs p) else N.double (list2N xs p)
   end.
 
-Print Bv2N.
-
 Definition list2nat_be_a (a: list bool) := N.to_nat (list2N a 0).
 
 Definition list2nat_be (a: list bool) := _list2nat_be a 0 0.
@@ -2792,9 +2789,6 @@ Lemma length_pos2list_acc: forall p a, (length (pos2list p a)) = (length a  + le
 Proof. intros p a.
        now rewrite pos2list_acc, app_length.
 Qed.
-
-
-From Hammer Require Import Hammer Reconstr.
 
 Lemma length_pos2list_nil: forall p, 
 length (pos2list p []) = Pos.to_nat (Pos.size p).
@@ -3288,7 +3282,7 @@ Fixpoint ashr_n_bits (a: list bool) (n: nat) (sign: bool): list bool :=
     end.
 
 Definition ashr_aux (a b: list bool): list bool :=
-ashr_n_bits a (list2nat_be b) (last a false).
+ashr_n_bits a (list2nat_be_a b) (last a false).
 
 Definition bv_ashr (a b : bitvector) : bitvector :=
   if ((@size a) =? (@size b))
@@ -3566,8 +3560,7 @@ Proof. intros.
        unfold bv_shl, bv_shl_a.
        case_eq (size a =? size b); intros; try easy.
        unfold shl_aux.
-
- now rewrite bv_shl_aux_eq.
+       now rewrite bv_shl_aux_eq.
 Qed.
 
 

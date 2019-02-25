@@ -303,6 +303,8 @@ Theorem bvshr_neq2 : forall (n : N), forall (s t : bitvector),
 Proof.
 Admitted.
 
+
+
 (*Arithmetic right shift*)
 (* (exists x, x >>a s = t) 
       <=> 
@@ -312,18 +314,12 @@ Admitted.
 Theorem bvashr_eq : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> iff
     (exists (x : bitvector), (size x = n) /\ (bv_ashr x s = t))
-    ((((bv_ult 
-          s 
-          (nat2bv (N.to_nat (size s)) (N.to_nat (size s)))) 
-        = true) 
-      ->  (bv_ashr (bv_shl t s) s) = t)
+    (((bv_ult s (nat2bv (N.to_nat (size s)) (N.to_nat (size s)))  = true) 
+      ->  bv_ashr (bv_shl t s) s = t)
                         /\
-     (((bv_ult 
-          s 
-          (nat2bv (N.to_nat (size s)) (N.to_nat (size s)))) 
-        = false) 
-      ->  (t = bv_not (zeros (size t))) \/ (t = (zeros (size t))))).
-Proof.
+     ((bv_ult s (nat2bv (N.to_nat (size s)) (N.to_nat (size s))) = false) 
+      ->  t = bv_not (zeros (size t)) \/ t = (zeros (size t)))).
+Proof. 
 Admitted.
 
 (* (exists x, x >>a s != t) <=> T *)
@@ -339,11 +335,23 @@ Theorem bvashr_eq2 : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> iff
     (exists (x : bitvector), (size x = n) /\ (bv_ashr s x = t))
     (exists (i : nat), 
-      (i >= 0) /\ 
-      (i <= (N.to_nat (size s))) /\ 
+(*    (i >= 0) /\ 
+      (i <= (N.to_nat (size s))) /\  *)
       ((bv_ashr s (nat2bv i (N.to_nat (size s)))) = t)).
-Proof.
-Admitted.
+Proof. split; intros.
+       - destruct H1 as (x, (H1, H2)).
+         exists (bv2nat_a x).
+         unfold bv2nat_a. 
+         unfold nat2bv, list2nat_be_a.
+         rewrite N2Nat.id.
+         unfold size in *.
+         rewrite H, <- H1, Nat2N.id. now rewrite N2List_list2N.
+       - destruct H1 as (i, H1).
+         exists (nat2bv i (N.to_nat (size s))). split.
+         unfold size. rewrite Nat2N.id.
+         now rewrite length_nat2bv.
+         easy.
+Qed.
 
 (* (exists x, s >>a x != t) 
     <=> 
