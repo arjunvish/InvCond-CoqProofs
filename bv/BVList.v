@@ -2724,11 +2724,23 @@ Fixpoint _list2nat_be (a: list bool) (n i: nat) : nat :=
     | xa :: xsa =>
         if xa then _list2nat_be xsa (n + (pow2 i)) (i + 1)
         else _list2nat_be xsa n (i + 1)
+  end.  
+
+Fixpoint list2N (a: list bool) (p: N) :=
+  match a with
+    | []  => 0
+    | x ::  xs => if x then N.succ_double (list2N xs p) else N.double (list2N xs p)
   end.
+
+Print Bv2N.
+
+Definition list2nat_be_a (a: list bool) := N.to_nat (list2N a 0).
 
 Definition list2nat_be (a: list bool) := _list2nat_be a 0 0.
 
 Definition bv2nat (a: list bool) := list2nat_be a.
+
+Definition bv2nat_a (a: list bool) := list2nat_be_a a.
 
 (*Nat -> BV Conversion *)
 
@@ -2758,6 +2770,7 @@ Definition nat2bv (n : nat) (size : nat) : bitvector :=
   pad_to size (nat2bv_aux n nil).
  *)
 
+
 Fixpoint pos2list (n: positive) acc :=
   match n with
     | xI m => pos2list m (acc ++ [true])
@@ -2765,12 +2778,124 @@ Fixpoint pos2list (n: positive) acc :=
     | xH => (acc ++ [true])
   end.
 
-Fixpoint padding l n :=
-  if (n <=? (length l)%nat)%nat then List.rev (firstn n (List.rev l))
-  else l ++ mk_list_false (n - (length l)).
+Lemma pos2list_acc: forall p a, (pos2list p a) = a ++ (pos2list p []).
+Proof. intro p.
+       induction p; intros.
+       - cbn. rewrite IHp. specialize (IHp [true]).
+         rewrite IHp. now rewrite app_assoc.
+       - cbn. rewrite IHp. specialize (IHp [false]).
+         rewrite IHp. now rewrite app_assoc.
+       - now cbn.
+Qed.
 
-Definition nat2bv (n : nat) (size : N): bitvector :=
-  padding (pos2list (Pos.of_nat n) []) (N.to_nat size).
+Lemma length_pos2list_acc: forall p a, (length (pos2list p a)) = (length a  + length (pos2list p []))%nat.
+Proof. intros p a.
+       now rewrite pos2list_acc, app_length.
+Qed.
+
+
+From Hammer Require Import Hammer Reconstr.
+
+Lemma length_pos2list_nil: forall p, 
+length (pos2list p []) = Pos.to_nat (Pos.size p).
+Proof. intro p.
+       induction p; intros.
+       - cbn. rewrite length_pos2list_acc.
+         cbn. rewrite IHp.
+         Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.inj_succ) Reconstr.Empty.
+       - cbn. rewrite length_pos2list_acc.
+         cbn. rewrite IHp.
+         Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.inj_succ) Reconstr.Empty.
+       - now cbn.
+Qed.
+
+Lemma length_pos2list: forall p a, 
+  (length (pos2list p a)) = (length a  + N.to_nat (N.size (Npos p)))%nat.
+Proof. intros.  
+       rewrite pos2list_acc, app_length.
+       f_equal. rewrite length_pos2list_nil.
+	     Reconstr.reasy (@Coq.ZArith.Znat.positive_N_nat) (@Coq.NArith.BinNatDef.N.size).
+Qed.
+
+Definition N2list (n: N) s :=
+  match n with 
+    | N0     => mk_list_false s
+    | Npos p => if (s <? (N.to_nat (N.size n)))%nat then (firstn s (pos2list p []))
+                else (pos2list p []) ++ mk_list_false (s - (N.to_nat (N.size n)))
+  end.
+
+Lemma length_N2list: forall n s, length (N2list n s) = s.
+Proof. intro n.
+       induction n; intros.
+       - cbn. now rewrite length_mk_list_false.
+       - cbn. case_eq (Pos.to_nat (Pos.size p)); intros.
+         + contradict H.
+         	Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.is_pos, 
+            @Coq.Arith.PeanoNat.Nat.neq_0_lt_0) Reconstr.Empty.
+         + case_eq ( (s <=? n)%nat); intros.
+           * rewrite firstn_length. rewrite length_pos2list_nil, H.
+            	Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.lt_eq_cases, @Coq.Arith.PeanoNat.Nat.min_l,
+               @Coq.Arith.PeanoNat.Nat.leb_le, @Coq.Arith.PeanoNat.Nat.succ_le_mono)
+              (@Coq.Init.Nat.min, @Coq.Init.Peano.lt).
+           * rewrite app_length, length_pos2list_nil, H, length_mk_list_false.
+             	Reconstr.reasy (@Coq.Arith.Minus.le_plus_minus,
+                @Coq.Arith.Compare_dec.leb_complete_conv) (@Coq.Init.Peano.lt).
+Qed.
+
+Definition nat2bv (n: nat) s := N2list (N.of_nat n) s.
+
+Lemma length_nat2bv: forall n s, length (nat2bv n s) = s.
+Proof. intros. unfold nat2bv.
+       now rewrite length_N2list.
+Qed.
+
+
+Lemma N2list_S_true: forall n m,
+N2list (N.succ_double n) (S m) = true :: N2list n m.
+Proof. intro n.
+       induction n; intros.
+       - cbn. rewrite Pos2Nat.inj_1. assert ((m - 0)%nat = m) by lia. now rewrite H.
+       - cbn. case_eq (Pos.to_nat (Pos.size p)); intros.
+         + cbn. contradict H.
+	         Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.neq_0_lt_0,
+             @Coq.PArith.Pnat.Pos2Nat.is_pos) Reconstr.Empty.
+         + assert ((Pos.to_nat (Pos.succ (Pos.size p))%nat = S (S n))).
+           {	Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.inj_succ) Reconstr.Empty. }
+           rewrite H0.
+           case_eq (m <=? n)%nat; intros; rewrite pos2list_acc; now cbn.
+Qed.
+
+Lemma N2list_S_false: forall n m,
+N2list (N.double n) (S m) = false :: N2list n m.
+Proof. intro n.
+       induction n; intros.
+       - now cbn.
+       - cbn. case_eq (Pos.to_nat (Pos.size p)); intros.
+         + cbn. contradict H.
+	         Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.neq_0_lt_0,
+             @Coq.PArith.Pnat.Pos2Nat.is_pos) Reconstr.Empty.
+         + assert ((Pos.to_nat (Pos.succ (Pos.size p))%nat = S (S n))).
+           {	Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.inj_succ) Reconstr.Empty. }
+           rewrite H0.
+           case_eq (m <=? n)%nat; intros; rewrite pos2list_acc; now cbn.
+Qed.
+
+Lemma N2List_list2N: forall a, N2list (list2N a 0) (length a) = a.
+Proof. intro a. 
+       induction a; intros.
+       - now cbn.
+       - cbn in *. case_eq a; intros.
+         + now rewrite N2list_S_true, IHa.
+         + now rewrite N2list_S_false, IHa.
+Qed.
+
+
+Lemma list2N_mk_list_false: forall n, (list2N (mk_list_false n) 0) = 0%N.
+Proof. intro n.
+       induction n; intros. 
+       + now cbn.
+       + cbn. now rewrite IHn.
+Qed.
 
 (* Shift Left *)
 
@@ -2791,7 +2916,7 @@ Definition shl_n_bits_a  (a: list bool) (n: nat): list bool :=
   else mk_list_false (length a).
 
 Definition shl_aux  (a b: list bool): list bool :=
-shl_n_bits a (list2nat_be b).
+shl_n_bits a (list2nat_be_a b).
 
 Definition bv_shl (a b : bitvector) : bitvector :=
   if ((@size a) =? (@size b))
@@ -2800,7 +2925,7 @@ Definition bv_shl (a b : bitvector) : bitvector :=
 
 Definition bv_shl_a (a b : bitvector) : bitvector :=
   if ((@size a) =? (@size b))
-  then shl_n_bits_a a (list2nat_be b)
+  then shl_n_bits_a a (list2nat_be_a b)
   else nil.
 
 Lemma length_shl_one_bit : forall a, length (shl_one_bit a) = length a.
@@ -2871,10 +2996,10 @@ Fixpoint shr_n_bits (a: list bool) (n: nat): list bool :=
     end.
 
 Definition shr_aux (a b: list bool): list bool :=
-shr_n_bits a (list2nat_be b).
+shr_n_bits a (list2nat_be_a b).
 
 Definition shr_aux_a (a b: list bool): list bool :=
-shr_n_bits_a a (list2nat_be b).
+shr_n_bits_a a (list2nat_be_a b).
 
 Definition bv_shr (a b : bitvector) : bitvector :=
   if ((@size a) =? (@size b))
@@ -2883,7 +3008,7 @@ Definition bv_shr (a b : bitvector) : bitvector :=
 
 Definition bv_shr_a (a b : bitvector) : bitvector :=
   if ((@size a) =? (@size b))
-  then shr_n_bits_a a (list2nat_be b)
+  then shr_n_bits_a a (list2nat_be_a b)
   else nil.
 
 Lemma length_skipn: forall n (a: list bool), length (skipn n a) = (length a - n)%nat.
@@ -3440,7 +3565,9 @@ Theorem bv_shl_eq: forall (a b : bitvector),
 Proof. intros.
        unfold bv_shl, bv_shl_a.
        case_eq (size a =? size b); intros; try easy.
-       unfold shl_aux. now rewrite bv_shl_aux_eq.
+       unfold shl_aux.
+
+ now rewrite bv_shl_aux_eq.
 Qed.
 
 

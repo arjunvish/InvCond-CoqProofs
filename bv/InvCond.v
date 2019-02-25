@@ -4,6 +4,8 @@ Import RAWBITVECTOR_LIST.
 
 Require Import List Bool NArith Psatz (*Int63*) ZArith Nnat.
 
+From Hammer Require Import Hammer Reconstr. 
+
 (* Start Practice:
  forall x : bitvector, size(x) >= 0*)
 
@@ -251,21 +253,47 @@ Theorem bvshr_neq : forall (s t : bitvector) (n : N),
       \/
       ((bv_ult s (nat2bv 
                   (N.to_nat (size s)) 
-                  ((size s))))) 
+                  (N.to_nat(size s))))) 
       = 
       true).
 Proof.
 Admitted.
 
+(** BE: did not get the restriction over i? *)
 (* (exists x, s >> x = t) <=> [i=0...size(s)]OR(s >> i = t) *)
 Theorem bvshr_eq2 : forall (s t : bitvector) (n : N), 
   (size s) = n -> (size t) = n -> iff 
     (exists (x : bitvector), (size x = n) /\ bv_shr s x = t)
     (exists (i : nat), 
-      i >= 0 /\ 
-      i <= (N.to_nat (size s)) /\ 
-      ((bv_shr s (nat2bv i (size s))) = t)).
-Proof. Admitted.
+(*    i >= 0 /\ 
+      i <= (N.to_nat (size s)) /\  *)
+      ((bv_shr s (nat2bv i (N.to_nat (size s)))) = t)).
+Proof. split; intros.
+       - destruct H1 as (x, (H1, H2)).
+         exists (bv2nat_a x).
+         unfold bv2nat_a. 
+         unfold nat2bv, list2nat_be_a.
+         case_eq (N.to_nat (list2N x 0) =? 0); intros.
+         rewrite bv_shr_eq in H2.
+         unfold bv_shr_a, list2nat_be_a in H2. 
+         apply Nat.eqb_eq in H3.
+         rewrite H, H1, N.eqb_refl, H3 in H2.
+         rewrite H3. cbn.
+         rewrite bv_shr_eq. unfold bv_shr_a.
+         unfold size.
+         rewrite length_mk_list_false, N2Nat.id, Nat2N.id, N.eqb_refl.
+         unfold list2nat_be_a. cbn.
+         rewrite list2N_mk_list_false. easy.
+         cbn. rewrite N2Nat.id.
+         unfold shr_n_bits_a in H2. unfold size in *.
+         rewrite H, <- H1.
+         now rewrite Nat2N.id, N2List_list2N.
+       - destruct H1 as (i, H1).
+         exists (nat2bv i (N.to_nat (size s))). split.
+         unfold size. rewrite Nat2N.id.
+         now rewrite length_nat2bv.
+         easy.
+Qed.
 
 
 (* (exists x, s >> x != t) <=> s != 0 or t != 0 *)
@@ -300,8 +328,8 @@ Theorem bvashr_eq2 : forall (s t : bitvector) (n : N),
     (exists (x : bitvector), (size x = n) /\ (bv_ashr s x = t))
     (exists (i : nat), 
       (i >= 0) /\ 
-      (i <= (N.to_nat (size s))) /\
-      ((bv_ashr s (nat2bv i (size s))) = t)).
+      (i <= (N.to_nat (size s))) /\ 
+      ((bv_ashr s (nat2bv i (N.to_nat (size s)))) = t)).
 Proof.
 Admitted.
 
@@ -354,7 +382,7 @@ Theorem bvshl_neq : forall (s t : bitvector) (n : N),
      \/
      ((bv_ult s (nat2bv 
                   (N.to_nat (size s))
-                  (size s))))
+                  (N.to_nat (size s)))))
       =
       true).
 Proof.
@@ -365,10 +393,15 @@ Theorem bvshl_eq2 : forall (s t : bitvector) (n : N),
   (size s) = n -> (size t) = n -> iff
     (exists (x : bitvector), (size x = n) /\ (bv_shl s x = t))
     (exists (i : nat), 
-      (i >= 0) /\ 
-      (i <= (N.to_nat (size s))) /\
-      ((bv_shl s (nat2bv i (size s))) = t)).
-Proof.
+(*       (i >= 0) /\ 
+      (i <= (N.to_nat (size s))) /\ *)
+      ((bv_shl s (nat2bv i (N.to_nat (size s)))) = t)).
+Proof. intros.
+       split; intros.
+       - destruct H1 as (x, (H1, H2)).
+         exists (bv2nat x). 
+          rewrite bv_shl_eq. unfold bv_shl_a.
+         unfold nat2bv, bv2nat in *.
 Admitted.
 
 (* (exists x, s << x != t) <=> s != 0 or or t != 0 *)
@@ -379,7 +412,6 @@ Theorem bvshl_neq2 : forall (s t : bitvector) (n : N),
 Proof.
 Admitted.
 
-Eval compute in length (true :: (false :: nil)).
 
 (*Concat*)
 (* (exists x, x o s = t) <=> s = t[size(s) - 1, 0] *)
