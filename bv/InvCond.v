@@ -407,13 +407,19 @@ Theorem bvshl_eq2 : forall (n : N), forall (s t : bitvector),
 (*    (i >= 0) /\ 
       (i <= (N.to_nat (size s))) /\ *)
       ((bv_shl s (nat2bv i (N.to_nat (size s)))) = t)).
-Proof. intros.
-       split; intros.
+Proof. split; intros.
        - destruct H1 as (x, (H1, H2)).
-         exists (bv2nat x). 
-          rewrite bv_shl_eq. unfold bv_shl_a.
-         unfold nat2bv, bv2nat in *.
-Admitted.
+         exists (bv2nat_a x).
+         unfold bv2nat_a. 
+         unfold nat2bv, list2nat_be_a.
+         rewrite N2Nat.id. unfold size in *.
+         rewrite H, <- H1, Nat2N.id. now rewrite N2List_list2N.
+       - destruct H1 as (i, H1).
+         exists (nat2bv i (N.to_nat (size s))). split.
+         unfold size. rewrite Nat2N.id.
+         now rewrite length_nat2bv.
+         easy.
+Qed.
 
 (* (exists x, s << x != t) <=> s != 0 or or t != 0 *)
 Theorem bvshl_neq2 : forall (n : N), forall (s t : bitvector), 
