@@ -2,3 +2,4 @@ BVList.glob
 BVList.vo
 Makefile
 Makefile.conf
+.BVList.aux
