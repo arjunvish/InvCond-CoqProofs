@@ -25,7 +25,7 @@ Local Open Scope bool_scope.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-(* From Hammer Require Import Hammer Reconstr. *)
+From Hammer Require Import Hammer Reconstr.
 
 (* We temporarily assume proof irrelevance to handle dependently typed
    bit vectors *)
@@ -687,7 +687,6 @@ Definition bv_ultP (a b : bitvector) : Prop :=
 
 Definition bv_sltP (a b : bitvector) : Prop :=
   if @size a =? @size b then slt_listP a b else False.
-
 
   (*multiplication*)
 
@@ -2150,6 +2149,7 @@ Proof. intro x.
          now contradict H6.
 Qed.
 
+
 (** bitvector ult/slt *)
 
 Lemma bv_ult_not_eqP : forall x y, bv_ultP x y -> x <> y.
@@ -3277,21 +3277,32 @@ Definition ashr_one_bit (a: list bool) (sign: bool) : list bool :=
      | h :: t => t ++ [sign]
    end.
 
+Definition ashr_n_bits_a (a: list bool) (n: nat) (sign: bool): list bool :=
+   if (n <? length a)%nat then 
+     if (Bool.eqb sign false) then skipn n a ++ mk_list_false n 
+     else skipn n a ++ mk_list_true n 
+   else 
+     if (Bool.eqb sign false) then mk_list_false (length a)
+     else mk_list_true (length a).
+
 Fixpoint ashr_n_bits (a: list bool) (n: nat) (sign: bool): list bool :=
     match n with
       | O => a
       | S n' => ashr_n_bits (ashr_one_bit a sign) n' sign
     end.
 
+Definition ashr_aux_a (a b: list bool): list bool :=
+ashr_n_bits_a a (list2nat_be_a b) (last a false).
+
 Definition ashr_aux (a b: list bool): list bool :=
 ashr_n_bits a (list2nat_be_a b) (last a false).
 
-Definition bv_ashr (a b : bitvector) : bitvector :=
+Definition bv_ashr_a (a b : bitvector) : bitvector :=
   if ((@size a) =? (@size b))
-  then ashr_aux a b
+  then ashr_aux_a a b
   else nil.
 
-Definition bv_ashr_a (a b : bitvector) : bitvector :=
+Definition bv_ashr (a b : bitvector) : bitvector :=
   if ((@size a) =? (@size b))
   then ashr_aux a b
   else nil.
@@ -3333,6 +3344,74 @@ Proof.
   now apply (f_equal (N.to_nat)) in H2; rewrite Nat2N.id in H2.
   Qed.
 
+Lemma ashr_shr_false: forall a n, ashr_n_bits_a a n false = shr_n_bits_a a n.
+Proof. intro a.
+       induction a; intros.
+       - now cbn.
+       - unfold ashr_n_bits_a, shr_n_bits_a. cbn.
+         case_eq ((n <=? length a0)%nat); intros; easy.
+Qed.
+
+Lemma ashr_n_shl_a: forall a n b,
+   ashr_n_bits_a (shl_n_bits_a (ashr_n_bits_a a n b) n) n b =
+   ashr_n_bits_a a n b.
+Proof. intros.
+       case_eq b; intros.
+       - revert n.
+         induction a; intros.
+         + now cbn.
+         + unfold ashr_n_bits_a, shl_n_bits_a.
+           case_eq ( (n <? length (a :: a0))%nat); intros.
+           * cbn. rewrite !app_length, !length_mk_list_true.
+             rewrite !length_skipn.
+             assert (Hone: ((length (a :: a0) - n + n))%nat = (length (a :: a0))%nat).
+             { apply Nat.ltb_lt in H0.
+               Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.lt_le_incl, 
+                 @Coq.Arith.PeanoNat.Nat.sub_add) Reconstr.Empty.
+             } rewrite Hone. cbn.
+             assert (Htwo: (n <=? length a0)%nat = true).
+             { Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.leb_antisym, 
+                  @Coq.Arith.PeanoNat.Nat.leb_nle, @Coq.Arith.PeanoNat.Nat.ltb_antisym, 
+                  @Coq.Bool.Bool.negb_true_iff, @Coq.Arith.Compare_dec.leb_correct) 
+                 (@Coq.Init.Nat.ltb, @Coq.Init.Datatypes.length).
+             } rewrite Htwo. rewrite !app_length, !length_mk_list_false, !firstn_length.
+               case_eq n; intros. cbn.
+               Reconstr.reasy (@Coq.Lists.List.firstn_all, 
+                  @Coq.Lists.List.app_nil_r) Reconstr.Empty.
+               subst. cbn. rewrite !app_length. cbn. rewrite !length_mk_list_true.
+               rewrite Min.min_l.
+               assert ((n0 + (length a0 - n0))%nat = (length a0)).
+               { rewrite le_plus_minus_r. easy.
+                 apply Nat.leb_le in Htwo.
+                 Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.lt_le_incl) (@Coq.Init.Peano.lt).
+               }
+               rewrite H. case_eq a0; intros.
+               subst. cbn in *. easy.
+               subst. cbn in *. rewrite H0.
+               case_eq n0; intros. cbn. 
+               Reconstr.rcrush (@Coq.Lists.List.app_nil_r, @Coq.Lists.List.firstn_all, 
+                  @Coq.Arith.PeanoNat.Nat.sub_diag, @Coq.Lists.List.app_comm_cons, 
+                  @Coq.Lists.List.firstn_app) (@Coq.Lists.List.firstn).
+               cbn. rewrite skipn_jo.
+               rewrite firstn_app, length_skipn.
+               assert (firstn (length l - n) (skipn n l) = skipn n l).
+               { Reconstr.rsimple (@Coq.Lists.List.firstn_all2, 
+                   @Coq.Arith.PeanoNat.Nat.lt_eq_cases,
+                   @RAWBITVECTOR_LIST.length_skipn) Reconstr.Empty.
+               } rewrite H2.
+               assert (((length l - n - (length l - n)))%nat = O).
+               { Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.sub_diag) Reconstr.Empty. }
+               rewrite H3. cbn. now rewrite app_nil_r.
+               Reconstr.rcrush (@Coq.Arith.PeanoNat.Nat.le_add_r, 
+                 @RAWBITVECTOR_LIST.length_skipn) Reconstr.Empty.
+           * cbn. rewrite length_mk_list_true.
+             assert ((n <=? length a0)%nat = false).
+             { 	Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.ltb_ge,
+                  @Coq.Arith.PeanoNat.Nat.leb_gt) 
+                 (@Coq.Init.Peano.lt, @Coq.Init.Datatypes.length).
+             } rewrite H1. cbn. now rewrite length_mk_list_false, H1.
+       - now rewrite !ashr_shr_false, shr_n_shl_a.
+Qed.
 
 Lemma skip_n_one_bit: forall n l b,
 ((n <? length (b :: l))%nat = true) ->
@@ -3554,6 +3633,51 @@ Proof. intro n.
 (*          Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.length). *)
          lia.
          now rewrite shl_one_bit_all_false.
+Admitted.
+
+Lemma ult_list_be_cons_false: forall a b c,
+length a = length b ->
+ult_list_big_endian (c :: a) (c :: b) = false -> ult_list_big_endian a b = false.
+Proof. intro a. 
+       induction a; intros.
+       - now cbn.
+       - case_eq b; intros. subst. now contradict H.
+         subst. cbn.
+         case_eq a0; intros.
+         subst. assert (l = nil) .
+         admit.
+(*          { 	Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.length). } *)
+         subst.  cbn in *. admit.
+(*          Reconstr.rsimple Reconstr.Empty (@Coq.Init.Datatypes.negb, 
+           @Coq.Init.Datatypes.orb, @Coq.Init.Datatypes.andb, @Coq.Bool.Bool.eqb). *)
+         rewrite <- H1 in *. cbn in H0.
+         case_eq a0; intros.
+         subst. now contradict H2.
+         subst. rewrite <- H2. 
+         assert ( eqb c c = true) by admit.
+(*          Reconstr.reasy Reconstr.Empty (@Coq.Bool.Bool.eqb). *)
+         rewrite H1 in H0. 
+         assert (negb c && c = false) by 	admit.
+(*           Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.negb, @Coq.Init.Datatypes.andb). *)
+         rewrite H3 in H0. admit.
+(* 	       Reconstr.rcrush (@Coq.Bool.Bool.negb_true_iff, @Coq.Bool.Bool.orb_false_iff, 
+           @Coq.Bool.Bool.andb_true_l) (@Coq.Init.Datatypes.negb, @Coq.Init.Datatypes.orb, 
+           @Coq.Init.Datatypes.andb, @Coq.Bool.Bool.eqb). *)
+Admitted.
+
+
+Lemma ult_list_big_endian_unf: forall a b c d,
+ult_list_big_endian (c :: a) (d :: b) =
+orb (andb (Bool.eqb c d) (ult_list_big_endian a b))
+    (andb (negb c) d).
+Proof. intro a.
+       case_eq a; intros.
+       + cbn in *. case_eq b; intros. admit.
+(* 	       Reconstr.reasy (@Coq.Bool.Bool.andb_false_r) 
+          (@Coq.Init.Datatypes.andb, @Coq.Bool.Bool.eqb, @Coq.Init.Datatypes.orb). *)
+         admit.
+(*          Reconstr.reasy Reconstr.Empty Reconstr.Empty. *)
+       + cbn in *. case_eq b0; intros; easy.
 Admitted.
 
 Theorem bv_shl_eq: forall (a b : bitvector),

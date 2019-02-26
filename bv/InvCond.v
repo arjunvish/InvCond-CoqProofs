@@ -4,7 +4,7 @@ Import RAWBITVECTOR_LIST.
 
 Require Import List Bool NArith Psatz (*Int63*) ZArith Nnat.
 
-(* From Hammer Require Import Hammer Reconstr.  *)
+From Hammer Require Import Hammer Reconstr.
 
 (* Start Practice:
  forall x : bitvector, size(x) >= 0*)
@@ -364,13 +364,34 @@ Admitted.
     (s >=u size(s) => (t = ~0 or t = 0)) *)
 Theorem bvashr_eq : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> iff
-    (exists (x : bitvector), (size x = n) /\ (bv_ashr x s = t))
+    (exists (x : bitvector), (size x = n) /\ (bv_ashr_a x s = t))
     (((bv_ult s (nat2bv (N.to_nat (size s)) (N.to_nat (size s)))  = true) 
-      ->  bv_ashr (bv_shl t s) s = t)
+      ->  bv_ashr_a (bv_shl t s) s = t)
                         /\
      ((bv_ult s (nat2bv (N.to_nat (size s)) (N.to_nat (size s))) = false) 
       ->  t = bv_not (zeros (size t)) \/ t = (zeros (size t)))).
-Proof. 
+Proof. split; intros.
+         - destruct H1 as (x, (Hx, A)).
+           split. unfold bv_ult. unfold size in *.
+           rewrite Nat2N.id, length_nat2bv, N.eqb_refl.
+           intro HH. rewrite <- A. rewrite bv_shl_eq.
+           unfold bv_ashr_a, bv_shl_a, size.
+           rewrite Hx, H, N.eqb_refl.
+           assert ((N.eqb (N.of_nat (length (ashr_aux_a x s))) n) = true) by admit.
+           rewrite H1.
+           assert ( (N.of_nat (length (shl_n_bits_a (ashr_aux_a x s) (list2nat_be_a s))) =? n)%N = true) by admit.
+           rewrite H2.  unfold ashr_aux_a.
+           assert ( (last (shl_n_bits_a (ashr_n_bits_a x (list2nat_be_a s) (last x false)) (list2nat_be_a s)) false) =
+                    (last x false)) by admit.
+           now rewrite H3, ashr_n_shl_a.
+           intro HH. rewrite <- A.
+           admit.
+         - destruct H1 as (H1, H2).
+           case_eq ( bv_ult s (nat2bv (N.to_nat (size s)) (N.to_nat (size s)))); intro HH.
+           exists (bv_shl t s). split. admit. now apply H1.
+           specialize (H2 HH). destruct H2 as [H2 | H2].
+           exists (bv_not (zeros (size s))). split. admit. admit.
+           exists (zeros (size s)). split. admit. admit.
 Admitted.
 
 (* (exists x, x >>a s != t) <=> T *)
