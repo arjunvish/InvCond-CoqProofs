@@ -44,7 +44,8 @@ Proof.
   Qed. 
 (* End Practice *)
 
-(*Addition*)
+
+(*------------------------------Addition------------------------------*)
 (* (exists x, x + s = t) <=> T *)
 Theorem bvadd : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
@@ -78,84 +79,10 @@ Proof. intros n s t (Hs, Ht).
   exists (bv_subt' t s).
   split; [exact (bv_subt'_size Ht Hs) | exact (bv_add_subst_opp Ht Hs)].
 Qed.
-
-(*Multiplication*)
-(* (exists x, x.s = t) <=> (-s | s) & t = t *)
-Theorem bvmult_eq : forall (n : N), forall (s t : bitvector), 
-  (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) /\ (bv_mult x s) = t) 
-    ((bv_and (bv_or (bv_not s) s) t) = t).
-Proof. intros n s t Hs Hn.
-       split; intro A.
-       - destruct A as (x, (Hx, A)).
-         rewrite <- A.
-         unfold bv_or, bv_not, bv_and, bv_mult.
-         unfold bits, size in *. rewrite Hx, Hs, N.eqb_refl.
-         assert ((N.of_nat (length (map negb s))%N =? n%N)%N = true).
-         { unfold negb. rewrite map_length. apply N.eqb_eq.
-           easy.
-         }
-         rewrite H.
-         assert (length (mult_list x s) = (length s)).
-         { unfold mult_list, bvmult_bool.
-           case_eq (length x).
-           intros. rewrite and_with_bool_len.
-           lia.
-           intros n0 Hn0. 
-           case n0 in *. rewrite and_with_bool_len.
-           lia.
-           rewrite prop_mult_bool_step. rewrite and_with_bool_len.
-           lia.
-         }
-         assert ((N.of_nat (length (map2 orb (map negb s) s)) =?
-                  N.of_nat (length (mult_list x s)))%N = true).
-         { erewrite <- map2_or_length, map_length.
-           now rewrite H0, N.eqb_refl.
-           now rewrite map_length.
-          }
-         rewrite H0. rewrite map2_or_neg_true, map2_and_comm.
-         rewrite length_mk_list_true, N.eqb_refl.
-         now rewrite <- H0, map2_and_1_neutral.
-        - admit. (** BE: this case needs unsigned division
-                     which is not yet there in the library.
-                     The file "th_bv_bitblast.plf" does not
-                     contain the signature of bvudiv, please
-                     contact Andy asking where to find that
-                     signature... *)
-Admitted.
-
-(* (exists x, x.s != t) <=> s != 0 or t != 0 *)
-Theorem bvmult_neq : forall (n : N), forall (s t : bitvector), 
-  (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) -> ~((bv_mult x s) = t)) 
-    ((~(s = zeros (size s))) \/ (~(t = zeros (size t)))).
-Proof.
-Admitted.
+(*------------------------------------------------------------*)
 
 
-(*Mod*)
-(* (exists x, x mod s = t) <=> ~(-s) >=u t *)
-
-(* (exists x, x mod s != t) <=> s != 1 or t != 0 *)
-
-(* (exists x, s mod x = t) <=> (t + t - s) & s >=u t *)
-
-(* (exists x, s mod x != t) <=> s != 0 or t != 0 *)
-
-
-(*Division*)
-(* (exists x, x / s = t) <=> (s.t) / s = t *)
-
-(* (exists x, x / s != t) <=>  s != 0 or t!= ~0*)
-
-(* (exists x, s / x = t) <=> s / (s / t) = t *)
-
-(* (exists x, s / x != t  and size(s) = 1) <=> s & t = 0 *)
-
-(* (exists x, s / x != t  and size(s) != 1) <=> T *)
-
-
-(*And*)
+(*------------------------------And------------------------------*)
 (* (exists x, x & s = t) <=> t & s = t*)
 Theorem bvand_eq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
@@ -191,8 +118,10 @@ Proof. intros n s t Hs Ht.
        unfold size in A.
        rewrite Nat2N.id, H0 in A.
 Admitted.
+(*------------------------------------------------------------*)
 
-(*Or*)
+
+(*------------------------------Or------------------------------*)
 (* (exists x, x | s = t) <=> t & s = t *)
 Theorem bvor_eq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
@@ -214,8 +143,10 @@ Theorem bvor_neq : forall (n : N), forall (s t : bitvector),
       (~(t = (bv_not (zeros (size t)))))).
 Proof.
 Admitted.
+(*------------------------------------------------------------*)
 
-(*Logical right shift*)
+
+(*------------------------------Logical right shift------------------------------*)
 (* (exists x, x >> s = t) <=> (t << s) >> s = t *)
 Theorem bvshr_eq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
@@ -302,71 +233,10 @@ Theorem bvshr_neq2 : forall (n : N), forall (s t : bitvector),
      ~(t = zeros (size t))).
 Proof.
 Admitted.
+(*------------------------------------------------------------*)
 
 
-
-(*Arithmetic right shift*)
-(* (exists x, x >>a s = t) 
-      <=> 
-  (s <u size(s) => (t << s) >>a s = t) 
-    and 
-    (s >=u size(s) => (t = ~0 or t = 0)) *)
-Theorem bvashr_eq : forall (n : N), forall (s t : bitvector),
-  (size s) = n -> (size t) = n -> iff
-    (exists (x : bitvector), (size x = n) /\ (bv_ashr x s = t))
-    (((bv_ult s (nat2bv (N.to_nat (size s)) (N.to_nat (size s)))  = true) 
-      ->  bv_ashr (bv_shl t s) s = t)
-                        /\
-     ((bv_ult s (nat2bv (N.to_nat (size s)) (N.to_nat (size s))) = false) 
-      ->  t = bv_not (zeros (size t)) \/ t = (zeros (size t)))).
-Proof. 
-Admitted.
-
-(* (exists x, x >>a s != t) <=> T *)
-Theorem bvashr_neq : forall (n : N), forall (s t : bitvector), 
-  (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) /\ ~(bv_ashr x s = t))
-    True.
-Proof.
-Admitted.
-
-(* (exists x, s >>a x = t) <=> [i=0...size(s)OR(s >>a i = t) *)
-Theorem bvashr_eq2 : forall (n : N), forall (s t : bitvector), 
-  (size s) = n -> (size t) = n -> iff
-    (exists (x : bitvector), (size x = n) /\ (bv_ashr s x = t))
-    (exists (i : nat), 
-(*    (i >= 0) /\ 
-      (i <= (N.to_nat (size s))) /\  *)
-      ((bv_ashr s (nat2bv i (N.to_nat (size s)))) = t)).
-Proof. split; intros.
-       - destruct H1 as (x, (H1, H2)).
-         exists (bv2nat_a x).
-         unfold bv2nat_a. 
-         unfold nat2bv, list2nat_be_a.
-         rewrite N2Nat.id.
-         unfold size in *.
-         rewrite H, <- H1, Nat2N.id. now rewrite N2List_list2N.
-       - destruct H1 as (i, H1).
-         exists (nat2bv i (N.to_nat (size s))). split.
-         unfold size. rewrite Nat2N.id.
-         now rewrite length_nat2bv.
-         easy.
-Qed.
-
-(* (exists x, s >>a x != t) 
-    <=> 
-  (t != 0 or s!= 0) and (t != ~0 or s !- ~0) *)
-Theorem bvashr_neq2 : forall (n : N), forall (s t : bitvector), 
-  (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) /\ ~(bv_ashr s x = t))
-    ((~(t = zeros (size t)) \/ ~(s = zeros (size s)))
-      /\
-      (~(t = bv_not (zeros (size t))) \/ ~(s = bv_not (zeros (size s))))).
-Proof.
-Admitted.
-
-
-(*Logical left shift*)
+(*------------------------------Logical left shift------------------------------*)
 (* (exists x, x << s = t) <=> (t >> s) << s = t *)
 Theorem bvshl_eq : forall (n : N), forall (s t : bitvector),
    (size s) = n -> (size t) = n -> iff
@@ -436,9 +306,72 @@ Theorem bvshl_neq2 : forall (n : N), forall (s t : bitvector),
     (~(s = zeros (size s)) \/ ~(t = zeros (size t))).
 Proof.
 Admitted.
+(*------------------------------------------------------------*)
 
 
-(*Concat*)
+(*------------------------------Arithmetic right shift------------------------------*)
+(* (exists x, x >>a s = t) 
+      <=> 
+  (s <u size(s) => (t << s) >>a s = t) 
+    and 
+    (s >=u size(s) => (t = ~0 or t = 0)) *)
+Theorem bvashr_eq : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ashr x s = t))
+    (((bv_ult s (nat2bv (N.to_nat (size s)) (N.to_nat (size s)))  = true) 
+      ->  bv_ashr (bv_shl t s) s = t)
+                        /\
+     ((bv_ult s (nat2bv (N.to_nat (size s)) (N.to_nat (size s))) = false) 
+      ->  t = bv_not (zeros (size t)) \/ t = (zeros (size t)))).
+Proof. 
+Admitted.
+
+(* (exists x, x >>a s != t) <=> T *)
+Theorem bvashr_neq : forall (n : N), forall (s t : bitvector), 
+  (size s) = n -> (size t) = n -> iff 
+    (exists (x : bitvector), (size x = n) /\ ~(bv_ashr x s = t))
+    True.
+Proof.
+Admitted.
+
+(* (exists x, s >>a x = t) <=> [i=0...size(s)OR(s >>a i = t) *)
+Theorem bvashr_eq2 : forall (n : N), forall (s t : bitvector), 
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ashr s x = t))
+    (exists (i : nat), 
+(*    (i >= 0) /\ 
+      (i <= (N.to_nat (size s))) /\  *)
+      ((bv_ashr s (nat2bv i (N.to_nat (size s)))) = t)).
+Proof. split; intros.
+       - destruct H1 as (x, (H1, H2)).
+         exists (bv2nat_a x).
+         unfold bv2nat_a. 
+         unfold nat2bv, list2nat_be_a.
+         rewrite N2Nat.id.
+         unfold size in *.
+         rewrite H, <- H1, Nat2N.id. now rewrite N2List_list2N.
+       - destruct H1 as (i, H1).
+         exists (nat2bv i (N.to_nat (size s))). split.
+         unfold size. rewrite Nat2N.id.
+         now rewrite length_nat2bv.
+         easy.
+Qed.
+
+(* (exists x, s >>a x != t) 
+    <=> 
+  (t != 0 or s!= 0) and (t != ~0 or s !- ~0) *)
+Theorem bvashr_neq2 : forall (n : N), forall (s t : bitvector), 
+  (size s) = n -> (size t) = n -> iff 
+    (exists (x : bitvector), (size x = n) /\ ~(bv_ashr s x = t))
+    ((~(t = zeros (size t)) \/ ~(s = zeros (size s)))
+      /\
+      (~(t = bv_not (zeros (size t))) \/ ~(s = bv_not (zeros (size s))))).
+Proof.
+Admitted.
+(*------------------------------------------------------------*)
+
+
+(*------------------------------Concat------------------------------*)
 (* (exists x, x o s = t) <=> s = t[size(s) - 1, 0] *)
 (** BE: Please verify this Coq statement with Andy or Cesare *)
 Theorem bvconcat_eq : forall (s t : bitvector),
@@ -507,3 +440,87 @@ Theorem bvconcat_neq2 : forall (n : N), forall (s t : bitvector),
     (True).
 Proof.
 Admitted.
+(*------------------------------------------------------------*)
+
+
+
+(* Multiplication, Division, Modulus - Unsolved *)
+
+
+(*------------------------------Multiplication------------------------------*)
+(* (exists x, x.s = t) <=> (-s | s) & t = t *)
+Theorem bvmult_eq : forall (n : N), forall (s t : bitvector), 
+  (size s) = n -> (size t) = n -> iff 
+    (exists (x : bitvector), (size x = n) /\ (bv_mult x s) = t) 
+    ((bv_and (bv_or (bv_not s) s) t) = t).
+Proof. intros n s t Hs Hn.
+       split; intro A.
+       - destruct A as (x, (Hx, A)).
+         rewrite <- A.
+         unfold bv_or, bv_not, bv_and, bv_mult.
+         unfold bits, size in *. rewrite Hx, Hs, N.eqb_refl.
+         assert ((N.of_nat (length (map negb s))%N =? n%N)%N = true).
+         { unfold negb. rewrite map_length. apply N.eqb_eq.
+           easy.
+         }
+         rewrite H.
+         assert (length (mult_list x s) = (length s)).
+         { unfold mult_list, bvmult_bool.
+           case_eq (length x).
+           intros. rewrite and_with_bool_len.
+           lia.
+           intros n0 Hn0. 
+           case n0 in *. rewrite and_with_bool_len.
+           lia.
+           rewrite prop_mult_bool_step. rewrite and_with_bool_len.
+           lia.
+         }
+         assert ((N.of_nat (length (map2 orb (map negb s) s)) =?
+                  N.of_nat (length (mult_list x s)))%N = true).
+         { erewrite <- map2_or_length, map_length.
+           now rewrite H0, N.eqb_refl.
+           now rewrite map_length.
+          }
+         rewrite H0. rewrite map2_or_neg_true, map2_and_comm.
+         rewrite length_mk_list_true, N.eqb_refl.
+         now rewrite <- H0, map2_and_1_neutral.
+        - admit. (** BE: this case needs unsigned division
+                     which is not yet there in the library.
+                     The file "th_bv_bitblast.plf" does not
+                     contain the signature of bvudiv, please
+                     contact Andy asking where to find that
+                     signature... *)
+Admitted.
+
+(* (exists x, x.s != t) <=> s != 0 or t != 0 *)
+Theorem bvmult_neq : forall (n : N), forall (s t : bitvector), 
+  (size s) = n -> (size t) = n -> iff 
+    (exists (x : bitvector), (size x = n) -> ~((bv_mult x s) = t)) 
+    ((~(s = zeros (size s))) \/ (~(t = zeros (size t)))).
+Proof.
+Admitted.
+(*------------------------------------------------------------*)
+
+
+(*------------------------------Mod------------------------------*)
+(* (exists x, x mod s = t) <=> ~(-s) >=u t *)
+
+(* (exists x, x mod s != t) <=> s != 1 or t != 0 *)
+
+(* (exists x, s mod x = t) <=> (t + t - s) & s >=u t *)
+
+(* (exists x, s mod x != t) <=> s != 0 or t != 0 *)
+(*------------------------------------------------------------*)
+
+
+(*------------------------------Division------------------------------*)
+(* (exists x, x / s = t) <=> (s.t) / s = t *)
+
+(* (exists x, x / s != t) <=>  s != 0 or t!= ~0*)
+
+(* (exists x, s / x = t) <=> s / (s / t) = t *)
+
+(* (exists x, s / x != t  and size(s) = 1) <=> s & t = 0 *)
+
+(* (exists x, s / x != t  and size(s) != 1) <=> T *)
+(*------------------------------------------------------------*)
