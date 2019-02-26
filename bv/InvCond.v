@@ -159,7 +159,23 @@ Theorem bvand_ult : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> iff
     (exists (x : bitvector), (size x = n) /\ (bv_ultP (bv_and x s) t))
     (~(t = zeros (size t))).
-Proof.
+Proof. 
+  intros n s t Hs Ht.
+  split; intro A.
+  + destruct A as (x, (Hx, A)).
+  (* Lemma non_neg : forall (b : bv), (0 <=u b).
+     By @(non_neg (bv_and x s)), 0 <=u (bv_and x s).
+     Lemma trans_bv_ult : forall (x, y, z : bv), (x <=u y) -> (y <u z) -> (x <u z).
+     By @(trans_bv_ult 0 (x & s) t @(non_neg (x & s)) A), 0 <u t.
+     Lemma ult_implies_neq : forall (x, y : bv) x <u y -> x != y.
+     By @(ult_implies_neq 0 t), 0 != t. *)
+(*+ t != 0 -> exists x, x & s <u t
+    exists 0.
+    Goal: 0 & s <u t.
+    Lemma and_absorb_0 : forall (b : bv), 0 & b = 0.
+    By @(and_absorb_0 s), Goal: 0 <u t.
+    Lemma nonzero_implies_ltzero forall (b : bv) b != 0 -> 0 <u t.  
+    By @(nonzero_implies_ltzero t A), qed. *) 
 Admitted.
 (*------------------------------------------------------------*)
 
