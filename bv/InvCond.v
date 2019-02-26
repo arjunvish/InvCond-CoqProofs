@@ -99,6 +99,40 @@ Proof. intros n s t Hs Ht.
 Qed.
 
 (* (exists x, x & s != t) <=> s != 0 or t != 0 *)
+Theorem bvand_neq : forall (n : N), forall (s t : bitvector), 
+  (size s) = n -> (size t) = n -> iff 
+    (exists (x : bitvector), (size x = n) /\ (bv_and x s) <> t) 
+    (s <> zeros (size s) \/ t <> zeros (size t)).
+Proof. intros n s t Hs Ht.
+  split; intro A.
+  + destruct A as (x, (Hx, A)).
+    assert (H : (s = zeros (size s) /\ t = zeros (size t)) -> False). 
+      { intros H'. destruct H' as (HS, HT).
+        rewrite -> HS in A. rewrite -> HT in A.
+        assert (Hsx : size s = size x).
+        { rewrite Hx. rewrite Hs. auto. }
+        rewrite -> Hsx in A.
+        assert (Htx : size t = size x).
+        { rewrite Hx. rewrite Ht. auto. }
+        rewrite -> Htx in A. unfold zeros in A.
+        unfold size in A. 
+        rewrite Nat2N.id in A.
+        assert (Hbits : forall b : bitvector, 
+                length b = length (bits b)).
+        { intro b. unfold bits. auto. }
+        rewrite -> (@Hbits x) in A.
+        rewrite (@bv_and_0_absorb x) in A. apply A. auto.
+      }
+  (* s = zeros (size s) /\ t = zeros (size t) -> False
+    |= ~(s = zeros (size s) /\ t = zeros (size t))
+    |= (s <> zeros (size s)) \/ (t <> zeros (size t))
+  + s != 0 \/ t != 0 -> (exists x, x & s != t)
+    not sure how to prove this direction *)
+   Admitted.
+
+        
+(*
+(* (exists x, x & s != t) <=> s != 0 or t != 0 *)
 (** BE: statement incorrect? *)
 Theorem bvand_neq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
@@ -118,6 +152,7 @@ Proof. intros n s t Hs Ht.
        unfold size in A.
        rewrite Nat2N.id, H0 in A.
 Admitted.
+*)
 
 (* (exists x, x & s <u t) <=> (t != 0) *)
 Theorem bvand_ult : forall (n : N), forall (s t : bitvector),
