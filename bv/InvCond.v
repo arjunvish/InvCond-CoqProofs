@@ -4,7 +4,7 @@ Import RAWBITVECTOR_LIST.
 
 Require Import List Bool NArith Psatz (*Int63*) ZArith Nnat.
 
-From Hammer Require Import Hammer Reconstr. 
+(* From Hammer Require Import Hammer Reconstr.  *)
 
 (* Start Practice:
  forall x : bitvector, size(x) >= 0*)
