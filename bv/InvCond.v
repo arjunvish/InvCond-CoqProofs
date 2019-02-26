@@ -118,6 +118,14 @@ Proof. intros n s t Hs Ht.
        unfold size in A.
        rewrite Nat2N.id, H0 in A.
 Admitted.
+
+(* (exists x, x & s <u t) <=> (t != 0) *)
+Theorem bvand_ult : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ultP (bv_and x s) t))
+    (~(t = zeros (size t))).
+Proof.
+Admitted.
 (*------------------------------------------------------------*)
 
 
@@ -141,6 +149,14 @@ Theorem bvor_neq : forall (n : N), forall (s t : bitvector),
     (~(s = (bv_not (zeros (size s)))) 
       \/ 
       (~(t = (bv_not (zeros (size t)))))).
+Proof.
+Admitted.
+
+(* (exists x, x | s <u t) <=> (s <u t) *)
+Theorem bvor_ult : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ultP (bv_or x s) t))
+    (bv_ultP s t).
 Proof.
 Admitted.
 (*------------------------------------------------------------*)
@@ -233,6 +249,21 @@ Theorem bvshr_neq2 : forall (n : N), forall (s t : bitvector),
      ~(t = zeros (size t))).
 Proof.
 Admitted.
+
+(* (exists x, x >> s <u t) <=> (t != 0)*)
+Theorem bvshr_ult : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ bv_ultP (bv_shr x s) t)
+    (~(t = zeros (size t))).
+Proof.
+Admitted.
+
+Theorem bvshr_ult2 : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ bv_ultP (bv_shr s x) t)
+    (~(t = zeros (size t))).
+Proof.
+Admitted.
 (*------------------------------------------------------------*)
 
 
@@ -306,6 +337,22 @@ Theorem bvshl_neq2 : forall (n : N), forall (s t : bitvector),
     (~(s = zeros (size s)) \/ ~(t = zeros (size t))).
 Proof.
 Admitted.
+
+(* (exists x, x << s <u t) <=> (t != 0) *)
+Theorem bvshl_ult : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ultP (bv_shl x s) t))
+    (~(t = zeros (size t))).
+Proof.
+Admitted.
+
+(* (exists x, s << x <u t) <=> (t != 0) *)
+Theorem bvshl_ult2 : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ultP (bv_shl s x) t))
+    (~(t = zeros (size t))).
+Proof.
+Admitted.
 (*------------------------------------------------------------*)
 
 
@@ -366,6 +413,22 @@ Theorem bvashr_neq2 : forall (n : N), forall (s t : bitvector),
     ((~(t = zeros (size t)) \/ ~(s = zeros (size s)))
       /\
       (~(t = bv_not (zeros (size t))) \/ ~(s = bv_not (zeros (size s))))).
+Proof.
+Admitted.
+
+(* (exists x, x >>a s <u t) <=> (t != 0) *)
+Theorem bvashr_ult : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ultP (bv_ashr x s) t))
+    (~(t = zeros (size t))).
+Proof.
+Admitted.
+
+(* (exists x, s >>a s <u t) <=> ((s <u t \/ s >=s 0) /\ t != 0) *)
+Theorem bvashr_ult2 : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ultP (bv_ashr s x) t))
+    (((bv_ultP s t) \/ ~(bv_sltP s (zeros (size s)))) /\ ~(t = zeros (size t))).
 Proof.
 Admitted.
 (*------------------------------------------------------------*)
@@ -440,6 +503,18 @@ Theorem bvconcat_neq2 : forall (n : N), forall (s t : bitvector),
     (True).
 Proof.
 Admitted.
+
+(* (exists x, x o s <u t) <=> 
+      (t[(s(t)-s(x)) : (s(t)-1)] = 0)
+        ->
+      (s <u t[0 : (s(s)-1)]) *)
+
+(* (exists x, s o x <u t) <=> 
+      (s <=u t[(s(t)-s(s)) : (s(t)-1)]) 
+        /\
+        (s = t[(s(t)-s(s)) : (s(t)-1)]
+          ->
+         t[0 : (s(x)-1)] != 0)) *)
 (*------------------------------------------------------------*)
 
 
@@ -499,6 +574,8 @@ Theorem bvmult_neq : forall (n : N), forall (s t : bitvector),
     ((~(s = zeros (size s))) \/ (~(t = zeros (size t)))).
 Proof.
 Admitted.
+
+(* (exists x, x.s <u t) <=> (t != 0) *)
 (*------------------------------------------------------------*)
 
 
@@ -510,6 +587,10 @@ Admitted.
 (* (exists x, s mod x = t) <=> (t + t - s) & s >=u t *)
 
 (* (exists x, s mod x != t) <=> s != 0 or t != 0 *)
+
+(* (exists x, x mod s <u t) <=> (t != 0) *)
+
+(* (exists x, s mod x <u t) <=> (t != 0) *)
 (*------------------------------------------------------------*)
 
 
@@ -523,4 +604,8 @@ Admitted.
 (* (exists x, s / x != t  and size(s) = 1) <=> s & t = 0 *)
 
 (* (exists x, s / x != t  and size(s) != 1) <=> T *)
+
+(* (exists x, x / s <u t) <=> ((0 <u s) /\ (0 <u t)) *)
+
+(* (exists x, s / x <u t) <=> ((0 <u ~(-t & s)) /\ (0 <u t)) *)
 (*------------------------------------------------------------*)
