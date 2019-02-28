@@ -2214,6 +2214,7 @@ Proof. intros.
   now apply rev_neq in H1.
 Qed.
 
+
 (* bitvector SUBT properties *)
 
 Lemma bv_subt_size: forall n a b, size a = n -> size b = n -> size (bv_subt a b) = n.
