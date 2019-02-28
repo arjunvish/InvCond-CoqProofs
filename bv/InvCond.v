@@ -92,10 +92,9 @@ Proof. intros n s t Hs Ht.
        split; intro A.
        - destruct A as (x, (Hx, A)). rewrite <- A.
          now rewrite (@bv_and_comm n x s Hx Hs), (@bv_and_idem1 s x n Hs Hx).
-       - exists (bv_and s t). 
-         split.
-         + rewrite (@bv_and_size n s t); easy.
-         + now rewrite (@bv_and_idem1 s t n Hs Ht), (@bv_and_comm n s t Hs Ht).
+       - exists t. split. 
+         + apply Ht.
+         + apply A.
 Qed.
 
 (* (exists x, x & s != t) <=> s != 0 or t != 0 *)
