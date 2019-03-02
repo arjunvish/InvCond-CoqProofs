@@ -176,6 +176,14 @@ Proof.
     Lemma nonzero_implies_ltzero forall (b : bv) b != 0 -> 0 <u t.  
     By @(nonzero_implies_ltzero t A), qed. *) 
 Admitted.
+
+(* (exists x, x & s >u t) <=> (t <u s) *)
+Theorem bvand_ugt : forall (n : N), forall (s t : bitvector), 
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ugtP (bv_and x s) t))
+    (bv_ultP t s).
+Proof.
+Admitted.
 (*------------------------------------------------------------*)
 
 
@@ -207,6 +215,14 @@ Theorem bvor_ult : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> iff
     (exists (x : bitvector), (size x = n) /\ (bv_ultP (bv_or x s) t))
     (bv_ultP s t).
+Proof.
+Admitted.
+
+(* (exists x, x | s >u t) <=> (t <u ~0) *)
+Theorem bvor_ugt : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ugtP (bv_or x s) t))
+    (bv_ultP t (zeros (size t))).
 Proof.
 Admitted.
 (*------------------------------------------------------------*)
@@ -300,7 +316,7 @@ Theorem bvshr_neq2 : forall (n : N), forall (s t : bitvector),
 Proof.
 Admitted.
 
-(* (exists x, x >> s <u t) <=> (t != 0)*)
+(* (exists x, (x >> s) <u t) <=> (t != 0)*)
 Theorem bvshr_ult : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> iff
     (exists (x : bitvector), (size x = n) /\ bv_ultP (bv_shr x s) t)
@@ -308,10 +324,27 @@ Theorem bvshr_ult : forall (n : N), forall (s t : bitvector),
 Proof.
 Admitted.
 
+(* (exists x, (s >> x) <u t) <=> (t != 0) *)
 Theorem bvshr_ult2 : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> iff
     (exists (x : bitvector), (size x = n) /\ bv_ultP (bv_shr s x) t)
     (~(t = zeros (size t))).
+Proof.
+Admitted.
+
+(* (exists x, (x >> s) >u t) <=> (t <u (~s >> s)) *)
+Theorem bvshr_ugt : forall (n : N), forall (s t : bitvector), 
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ bv_ugtP (bv_shr x s) t)
+    (bv_ultP t (bv_shr (bv_not s) s)).
+Proof.
+Admitted.
+
+(* (exists x, (s >> x) >u t) <=> (t <u s) *)
+Theorem bvshr_ugt2 : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ bv_ugtP (bv_shr s x) t)
+    (bv_ultP t s).
 Proof.
 Admitted.
 (*------------------------------------------------------------*)
@@ -401,6 +434,24 @@ Theorem bvshl_ult2 : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> iff
     (exists (x : bitvector), (size x = n) /\ (bv_ultP (bv_shl s x) t))
     (~(t = zeros (size t))).
+Proof.
+Admitted.
+
+(* (exists x, x << s >u t) <=> (t <u (~0 << s)) *)
+Theorem bvshl_ugt : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ugtP (bv_shl x s) t))
+    (bv_ultP t (bv_shl (bv_not (zeros (size s))) s)).
+Proof.
+Admitted.
+
+(* (exists x, (s << x) >u t) <=> 
+   (exists i, 0 <= i < size(s), (s << i) >u t) *)
+Theorem bvshl_ugt2 : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ugtP (bv_shl s x) t))
+    (exists (i : nat), (i >= 0) /\ (i < N.to_nat (size s)) /\
+      (bv_ugtP (bv_shl s (nat2bv i (N.to_nat (size t)))) t)).
 Proof.
 Admitted.
 (*------------------------------------------------------------*)
@@ -600,7 +651,7 @@ Theorem bvashr_neq2 : forall (n : N), forall (s t : bitvector),
 Proof.
 Admitted.
 
-(* (exists x, x >>a s <u t) <=> (t != 0) *)
+(* (exists x, (x >>a s) <u t) <=> (t != 0) *)
 Theorem bvashr_ult : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> iff
     (exists (x : bitvector), (size x = n) /\ (bv_ultP (bv_ashr x s) t))
@@ -608,11 +659,27 @@ Theorem bvashr_ult : forall (n : N), forall (s t : bitvector),
 Proof.
 Admitted.
 
-(* (exists x, s >>a s <u t) <=> ((s <u t \/ s >=s 0) /\ t != 0) *)
+(* (exists x, (s >>a s) <u t) <=> ((s <u t \/ s >=s 0) /\ t != 0) *)
 Theorem bvashr_ult2 : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> iff
     (exists (x : bitvector), (size x = n) /\ (bv_ultP (bv_ashr s x) t))
     (((bv_ultP s t) \/ ~(bv_sltP s (zeros (size s)))) /\ ~(t = zeros (size t))).
+Proof.
+Admitted.
+
+(* (exists x, (x >>a s) >u t) <=> (t <u ~0) *)
+Theorem bvashr_ugt : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ugtP (bv_ashr x s) t))
+    (bv_ultP t (bv_not (zeros (size t)))).
+Proof.
+Admitted.
+
+(* (exists x, (s >>a x) >u t) <=> ((s <s (s >> !t)) \/ (t <u s)) *)
+Theorem bvashr_ugt2 : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ugtP (bv_ashr s x) t))
+    ((bv_sltP s (bv_shr s (bv_not t))) \/ (bv_ultP t s)).
 Proof.
 Admitted.
 (*------------------------------------------------------------*)
@@ -689,16 +756,28 @@ Proof.
 Admitted.
 
 (* (exists x, x o s <u t) <=> 
-      (t[(s(t)-s(x)) : (s(t)-1)] = 0)
+      ((t[(s(t)-s(x)) : (s(t)-1)] = 0)
         ->
-      (s <u t[0 : (s(s)-1)]) *)
+      (s <u t[0 : (s(s)-1)])) *)
 
 (* (exists x, s o x <u t) <=> 
-      (s <=u t[(s(t)-s(s)) : (s(t)-1)]) 
+      ((s <=u t[(s(t)-s(s)) : (s(t)-1)]) 
         /\
-        (s = t[(s(t)-s(s)) : (s(t)-1)]
+        ((s = t[(s(t)-s(s)) : (s(t)-1)]
           ->
-         t[0 : (s(x)-1)] != 0)) *)
+         t[0 : (s(x)-1)] != 0))) *)
+
+(* (exists x, x o s >u t) <=>
+      ((t[s(t)-s(x) : s(t)-1] = !0)
+        ->
+      (s >u (t[0 : s(s)-1]))) *)
+
+(* (exists x, s o x >u t) <=>
+      ((s >=u t[s(t)-s(s) : s(t)-1])
+        /\
+      ((s = t[s(t)-s(s) : s(t)-1])
+        =>
+        (t[0 : s(x)-1] != !0))) *)
 (*------------------------------------------------------------*)
 
 
@@ -754,12 +833,26 @@ Admitted.
 (* (exists x, x.s != t) <=> s != 0 or t != 0 *)
 Theorem bvmult_neq : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff 
-    (exists (x : bitvector), (size x = n) -> ~((bv_mult x s) = t)) 
+    (exists (x : bitvector), (size x = n) /\ ~((bv_mult x s) = t)) 
     ((~(s = zeros (size s))) \/ (~(t = zeros (size t)))).
 Proof.
 Admitted.
 
 (* (exists x, x.s <u t) <=> (t != 0) *)
+Theorem bvmult_ult : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ultP (bv_mult x s) t))
+    (~ t = zeros (size t)).
+Proof.
+Admitted.
+
+(* (exists x, x.s >u t) <=> (t <u (-s | s)) *)
+Theorem bvmult_ugt : forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> iff
+    (exists (x : bitvector), (size x = n) /\ (bv_ugtP (bv_mult x s) t))
+    (bv_ultP t (bv_or (bv_neg s) s)).
+Proof.
+Admitted. 
 (*------------------------------------------------------------*)
 
 
@@ -775,6 +868,10 @@ Admitted.
 (* (exists x, x mod s <u t) <=> (t != 0) *)
 
 (* (exists x, s mod x <u t) <=> (t != 0) *)
+
+(* (exists x, x mod s >u t) <=> (t <u ~(-s)) *)
+
+(* (exists x, s mod s >u t) <=> (t <u s) *)
 (*------------------------------------------------------------*)
 
 
@@ -792,4 +889,8 @@ Admitted.
 (* (exists x, x / s <u t) <=> ((0 <u s) /\ (0 <u t)) *)
 
 (* (exists x, s / x <u t) <=> ((0 <u ~(-t & s)) /\ (0 <u t)) *)
+
+(* (exists x, x / s >u t) <=> ((~0 / s) >u t) *)
+
+(* (exists x, s / x >u t) <=> (t <u ~0) *)
 (*------------------------------------------------------------*)
