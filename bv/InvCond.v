@@ -69,6 +69,15 @@ Proof. intro a.
               @BV.BVList.RAWBITVECTOR_LIST.bv2nat_a).
 Qed.
 
+Lemma bvdm: forall a b: bitvector, size a = size b ->
+   (bv_not (bv_and a b)) = (bv_or (bv_not a) (bv_not b)).
+Proof. intros. unfold bv_and, bv_or, bv_not.
+       rewrite H, N.eqb_refl.
+       unfold bits, size in *. 
+       rewrite !map_length, H, N.eqb_refl.
+       now rewrite not_list_and_or.
+Qed.
+
 (* End Practice *)
 
 
