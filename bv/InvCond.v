@@ -41,7 +41,34 @@ Proof.
   - auto.
   - rewrite -> non_empty_list_size. unfold size in *. 
     rewrite -> Nat2N.id in *. apply succ_gt_pred. apply IHx.
-  Qed. 
+  Qed.
+
+Lemma bvgez: forall a: bitvector, (bv2nat_a a = 0) \/ (bv2nat_a a > 0).
+Proof. intro a.
+       induction a; intros.
+       - cbn. left. easy.
+       - cbn. case_eq a; intros.
+         + right. hammer. unfold bv2nat_a, list2nat_be_a.
+        	 Reconstr.rsimple (@Coq.Arith.Gt.gt_0_eq, @Coq.Arith.PeanoNat.Nat.add_0_l,
+           @Coq.NArith.Nnat.N2Nat.inj_succ_double) 
+          (@BV.BVList.RAWBITVECTOR_LIST.list2nat_be_a, 
+           @BV.BVList.RAWBITVECTOR_LIST.list2N).
+         + unfold bv2nat_a, list2nat_be_a. destruct IHa.
+           * left. 
+	           Reconstr.rblast (@Coq.NArith.Nnat.N2Nat.id, @BV.BVList.RAWBITVECTOR_LIST.list2N_N2List,
+               @Coq.Init.Peano.O_S, @Coq.NArith.Nnat.Nat2N.id) 
+              (@Coq.NArith.BinNatDef.N.of_nat, @BV.BVList.RAWBITVECTOR_LIST.list2nat_be_a, 
+               @BV.BVList.RAWBITVECTOR_LIST.bv2nat_a, @Coq.NArith.BinNatDef.N.double, 
+               @BV.BVList.RAWBITVECTOR_LIST.list2N).
+           * right. cbn. 
+	           Reconstr.rsimple (@Coq.NArith.Nnat.Nat2N.id, @Coq.PArith.Pnat.Pos2Nat.is_pos, 
+              @Coq.Arith.PeanoNat.Nat.lt_irrefl, @BV.BVList.RAWBITVECTOR_LIST.list2N_N2List)
+             (@BV.BVList.RAWBITVECTOR_LIST.list2nat_be_a, @Coq.NArith.BinNatDef.N.to_nat, 
+              @Coq.NArith.BinNatDef.N.of_nat,
+              @Coq.Init.Peano.gt, @Coq.NArith.BinNatDef.N.double,
+              @BV.BVList.RAWBITVECTOR_LIST.bv2nat_a).
+Qed.
+
 (* End Practice *)
 
 
