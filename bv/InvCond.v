@@ -486,7 +486,7 @@ Proof.
     split. 
     - apply bv_not_size. rewrite (zeros_size (size s)). 
       apply  Hs. 
-    - 
+    - apply bv_ultP_bv_ugtP. apply H.
 Admitted.
 
 (* (exists x, (s << x) >u t) <=> 

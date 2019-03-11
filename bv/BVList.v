@@ -2375,6 +2375,45 @@ Proof.
         { destruct H. apply negb_true_iff in H. subst. easy. }
 Qed. 
 
+Lemma ult_list_not_ugt_list : forall x y, ult_list x y = true -> ugt_list x y = false.
+Proof.
+  intros x y. unfold ult_list. intros.
+  apply ult_list_big_endian_not_ugt_list_big_endian in H.
+  unfold ugt_list. apply H.
+Qed.
+
+Lemma bv_ult_not_bv_ugt : forall x y, bv_ult x y = true -> bv_ugt x y = false.
+Proof.
+  intros x y. unfold bv_ult.
+  case_eq (size x =? size y); intros.
+  - apply ult_list_not_ugt_list in H0. unfold bv_ugt.
+    rewrite H. apply H0.
+  - now contradict H0.
+Qed.
+
+Lemma ult_listP_not_ugt_listP : forall x y, ult_listP x y -> ~ (ugt_listP x y).
+Proof.
+  unfold ult_listP.
+  unfold not. intros. unfold ult_list in H.
+  case_eq (ult_list_big_endian (List.rev x) (List.rev y)).
+  + intros. apply ult_list_big_endian_not_ugt_list_big_endian in H1.
+    unfold ugt_listP in H0. unfold ugt_list in H0. rewrite H1 in H0.
+    now contradict H0.
+  + intros. now rewrite H1 in H.
+Qed.
+
+Lemma bv_ultP_not_bv_ugtP : forall x y, bv_ultP x y -> ~ (bv_ugtP x y).
+Proof. 
+  intros x y. unfold bv_ultP. unfold not.
+  case_eq (size x =? size y); intros.
+  - unfold ult_listP in H0. unfold bv_ugtP in H1.
+    rewrite H in H1. unfold ugt_listP in H1.
+    now apply ugt_listP_not_ult_listP in H0.
+  - now contradict H0.
+Qed.
+
+
+(* a <u b -> b >u a *)
 Lemma ult_list_big_endian_ugt_list_big_endian : forall x y, 
   ult_list_big_endian x y = true -> ugt_list_big_endian y x = true.
 Proof.
@@ -2393,27 +2432,11 @@ Proof.
         { destruct H. apply negb_true_iff in H. subst. case l; easy. }
 Qed. 
 
-Lemma ult_list_not_ugt_list : forall x y, ult_list x y = true -> ugt_list x y = false.
-Proof.
-  intros x y. unfold ult_list. intros.
-  apply ult_list_big_endian_not_ugt_list_big_endian in H.
-  unfold ugt_list. apply H.
-Qed.
-
 Lemma ult_list_ugt_list : forall x y, ult_list x y = true -> ugt_list y x = true.
 Proof.
   intros x y. unfold ult_list. intros. 
   apply ult_list_big_endian_ugt_list_big_endian in H.
   unfold ugt_list. apply H.
-Qed.
-
-Lemma bv_ult_not_bv_ugt : forall x y, bv_ult x y = true -> bv_ugt x y = false.
-Proof.
-  intros x y. unfold bv_ult.
-  case_eq (size x =? size y); intros.
-  - apply ult_list_not_ugt_list in H0. unfold bv_ugt.
-    rewrite H. apply H0.
-  - now contradict H0.
 Qed.
 
 Lemma bv_ult_bv_ugt : forall x y, bv_ult x y = true -> bv_ugt y x = true.
@@ -2425,42 +2448,82 @@ Proof.
   - now contradict H0. 
 Qed.
 
-Lemma ult_listP_not_ugt_listP : forall x y, ult_listP x y -> ~ (ugt_listP x y).
-Proof.
-  unfold ult_listP.
-  unfold not. intros. unfold ult_list in H.
-  case_eq (ult_list_big_endian (List.rev x) (List.rev y)).
-  + intros. apply ult_list_big_endian_not_ugt_list_big_endian in H1.
-    unfold ugt_listP in H0. unfold ugt_list in H0. rewrite H1 in H0.
-    now contradict H0.
-  + intros. now rewrite H1 in H.
-Qed.
-
 Lemma ult_listP_ugt_listP : forall x y, ult_listP x y -> ugt_listP y x.
 Proof.
   unfold ult_listP.
   intros. unfold ult_list in H.
   case_eq (ult_list_big_endian (List.rev x) (List.rev y)).
   + intros. unfold ugt_listP. unfold ugt_list. 
-    rewrite ult_list_big_endian_ugt_list_big_endian in *. 
-    * easy.
-    * apply H0.
-  + 
-CHECK HERE
+    apply (@ult_list_big_endian_ugt_list_big_endian (List.rev x) (List.rev y)) in H0.
+    rewrite H0. easy.
+  + intros. rewrite H0 in H. now contradict H.
+Qed.
 
-Lemma bv_ultP_not_bv_ugtP : forall x y, bv_ultP x y -> ~ (bv_ugtP x y).
-Proof. 
-  intros x y. unfold bv_ultP. unfold not.
+Lemma bv_ultP_bv_ugtP : forall x y, bv_ultP x y -> (bv_ugtP y x).
+Proof.
+  intros x y. unfold bv_ultP, bv_ugtP.
+  rewrite (@eqb_sym (size y) (size x)).
   case_eq (size x =? size y); intros.
-  - unfold ult_listP in H0. unfold bv_ugtP in H1.
-    rewrite H in H1. unfold ugt_listP in H1.
-    now apply ugt_listP_not_ult_listP in H0.
-  - now contradict H0.
+  - apply ult_listP_ugt_listP. apply H0.
+  - apply H0.
 Qed.
 
 
-(* a <u b -> b <u a *)
+(*a >u b -> b <u a *)
+Lemma ugt_list_big_endian_ult_list_big_endian : forall x y,
+  ugt_list_big_endian x y = true -> ult_list_big_endian y x = true.
+Proof.
+  intros x. induction x.
+  + simpl. easy. 
+  + intros y. case y.
+    - intros. case a; case x in *; simpl in H; now contradict H.
+    - intros b l. simpl. 
+      specialize (IHx l). case x in *.
+      * simpl. case l in *.
+        { case a; case b; simpl; easy. }
+        { case a; case b; simpl; easy. }
+      * rewrite !orb_true_iff, !andb_true_iff. intro. destruct H.
+        { destruct H. apply IHx in H0. apply Bool.eqb_prop in H.
+          rewrite H. rewrite H0. case b; case l; easy. }
+        { destruct H. apply negb_true_iff in H0. subst. case l; easy. }
+Qed. 
+
+Lemma ugt_list_ult_list : forall x y, ugt_list x y = true -> ult_list y x = true.
+Proof.
+  intros x y. unfold ugt_list. intros. 
+  apply ugt_list_big_endian_ult_list_big_endian in H.
+  unfold ult_list. apply H.
+Qed.
+
+Lemma bv_ugt_bv_ult : forall x y, bv_ugt x y = true -> bv_ult y x = true.
+Proof.
+  intros x y. unfold bv_ugt.
+  case_eq (size x =? size y); intros.
+  - apply ugt_list_ult_list in H0. unfold bv_ult. rewrite (@eqb_sym (size x) (size y)) in H. 
+    rewrite H. apply H0. 
+  - now contradict H0. 
+Qed.
+
+Lemma ugt_listP_ult_listP : forall x y, ugt_listP x y -> ult_listP y x.
+Proof.
+  unfold ugt_listP.
+  intros. unfold ugt_list in H.
+  case_eq (ugt_list_big_endian (List.rev x) (List.rev y)).
+  + intros. unfold ult_listP. unfold ult_list. 
+    apply (@ugt_list_big_endian_ult_list_big_endian (List.rev x) (List.rev y)) in H0.
+    rewrite H0. easy.
+  + intros. rewrite H0 in H. now contradict H.
+Qed.
  
+Lemma bv_ugtP_bv_ultP : forall x y, bv_ugtP x y -> (bv_ultP y x).
+Proof.
+  intros x y. unfold bv_ugtP, bv_ultP.
+  rewrite (@eqb_sym (size y) (size x)).
+  case_eq (size x =? size y); intros.
+  - apply ugt_listP_ult_listP. apply H0.
+  - apply H0.
+Qed.
+
 
 Lemma nlt_be_neq_gt: forall x y,
     length x = length y -> ult_list_big_endian x y = false ->
@@ -3066,6 +3129,11 @@ Fixpoint _list2nat_be (a: list bool) (n i: nat) : nat :=
         else _list2nat_be xsa n (i + 1)
   end.  
 
+Definition list2nat_be (a: list bool) := _list2nat_be a 0 0.
+
+Definition bv2nat (a: list bool) := list2nat_be a.
+
+
 Fixpoint list2N (a: list bool) (p: N) :=
   match a with
     | []  => 0
@@ -3074,11 +3142,8 @@ Fixpoint list2N (a: list bool) (p: N) :=
 
 Definition list2nat_be_a (a: list bool) := N.to_nat (list2N a 0).
 
-Definition list2nat_be (a: list bool) := _list2nat_be a 0 0.
-
-Definition bv2nat (a: list bool) := list2nat_be a.
-
 Definition bv2nat_a (a: list bool) := list2nat_be_a a.
+
 
 (*Nat -> BV Conversion *)
 
