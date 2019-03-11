@@ -67,7 +67,7 @@ Qed.
 Definition eqb := N.eqb.
 
 Lemma eqb_eq : forall n m, eqb n m = true <-> eq n m.
-Proof. Admitted.
+Proof. apply N.eqb_eq. Qed.
 
 End N.
 
