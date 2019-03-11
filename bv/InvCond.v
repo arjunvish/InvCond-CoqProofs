@@ -337,7 +337,7 @@ Theorem bvshr_ugt : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> iff
     (exists (x : bitvector), (size x = n) /\ bv_ugtP (bv_shr x s) t)
     (bv_ultP t (bv_shr (bv_not s) s)).
-Proof.
+Proof. 
 Admitted.
 
 (* (exists x, (s >> x) >u t) <=> (t <u s) *)
@@ -443,6 +443,14 @@ Theorem bvshl_ugt : forall (n : N), forall (s t : bitvector),
     (exists (x : bitvector), (size x = n) /\ (bv_ugtP (bv_shl x s) t))
     (bv_ultP t (bv_shl (bv_not (zeros (size s))) s)).
 Proof.
+  intros n s t Hs Ht.
+  split. 
+  + admit. 
+  + intro. exists (bv_not (zeros (size s))).
+    split. 
+    - apply bv_not_size. rewrite (zeros_size (size s)). 
+      apply  Hs. 
+    - 
 Admitted.
 
 (* (exists x, (s << x) >u t) <=> 
