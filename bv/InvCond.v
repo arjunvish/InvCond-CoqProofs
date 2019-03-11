@@ -48,7 +48,7 @@ Proof. intro a.
        induction a; intros.
        - cbn. left. easy.
        - cbn. case_eq a; intros.
-         + right. hammer. unfold bv2nat_a, list2nat_be_a.
+         + right. unfold bv2nat_a, list2nat_be_a.
         	 Reconstr.rsimple (@Coq.Arith.Gt.gt_0_eq, @Coq.Arith.PeanoNat.Nat.add_0_l,
            @Coq.NArith.Nnat.N2Nat.inj_succ_double) 
           (@BV.BVList.RAWBITVECTOR_LIST.list2nat_be_a, 
