@@ -4564,13 +4564,6 @@ Proof. intros.
         Reconstr.rcrush (@Coq.Arith.PeanoNat.Nat.sub_gt) Reconstr.Empty.
 Qed.
 
-Lemma non_neg : forall (b : bitvector), 
-  (bv_ultP (zeros (size b)) b) \/ ((zeros (size b)) = b).
-Proof.
-  intro b.
-  left. unfold bv_ultP. case_eq (size (zeros (size b)) =? size b).
-  Admitted. 
-
 End RAWBITVECTOR_LIST.
 
 Module BITVECTOR_LIST <: BITVECTOR.

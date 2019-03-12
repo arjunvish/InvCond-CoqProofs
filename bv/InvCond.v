@@ -47,7 +47,7 @@ Lemma bvgez: forall a: bitvector, (bv2nat_a a = 0) \/ (bv2nat_a a > 0).
 Proof. intro a.
        induction a; intros.
        - cbn. left. easy.
-       - cbn. case_eq a; intros.
+       - case_eq a; intros.
          + right. unfold bv2nat_a, list2nat_be_a.
         	 Reconstr.rsimple (@Coq.Arith.Gt.gt_0_eq, @Coq.Arith.PeanoNat.Nat.add_0_l,
            @Coq.NArith.Nnat.N2Nat.inj_succ_double) 
@@ -67,8 +67,39 @@ Proof. intro a.
               @Coq.NArith.BinNatDef.N.of_nat,
               @Coq.Init.Peano.gt, @Coq.NArith.BinNatDef.N.double,
               @BV.BVList.RAWBITVECTOR_LIST.bv2nat_a).
-Qed.
+Qed.    
 
+(*
+Lemma bv_non_neg : forall b : bitvector,
+ (zeros (size b) = b) \/ (bv_ultP (zeros (size b)) b).
+Proof.
+  intro a. induction a.
+  + left. easy.
+  + case_eq a.
+    - intros. unfold zeros in *. unfold size in *. 
+      rewrite Nat2N.id in *. destruct IHa.
+      * right. rewrite <- H0. admit.
+      * right. admit.
+    - intros. unfold zeros in *. unfold size in *. 
+      rewrite Nat2N.id in *. destruct IHa.
+      * left. assert (mk_list_false_succ : forall (h : bool) (t : list bool), 
+                (mk_list_false (length (h :: t)) = 
+                  (false :: (mk_list_false (length t))))). { admit. }
+        rewrite (@mk_list_false_succ false a0). rewrite -> H0. easy.  
+      * right. assert (mk_list_false_succ : forall (h : bool) (t : list bool), 
+                (mk_list_false (length (h :: t)) = 
+                  (false :: (mk_list_false (length t))))). { admit. }
+        rewrite (@mk_list_false_succ false a0). unfold bv_ultP in *.
+        case_eq ((size (false :: mk_list_false (length a0)) =? size (false :: a0))%N).
+        { intros.   
+
+Lemma mk_list_false_succ : forall (h : bool) (t : list bool), 
+  (mk_list_false (length (h :: t)) = (false :: (mk_list_false (length t))).
+Lemma bv_non_neg_aux : forall (h : bool) (t : list bool),
+bv_ultP (zeros (length (h :: t))) (true :: t).
+*)
+
+ 
 Lemma bvdm: forall a b: bitvector, size a = size b ->
    (bv_not (bv_and a b)) = (bv_or (bv_not a) (bv_not b)).
 Proof. intros. unfold bv_and, bv_or, bv_not.
@@ -198,19 +229,35 @@ Proof.
   intros n s t Hs Ht.
   split; intro A.
   + destruct A as (x, (Hx, A)).
-  (* Lemma non_neg : forall (b : bv), (0 <=u b).
-     By @(non_neg (bv_and x s)), 0 <=u (bv_and x s).
-     Lemma trans_bv_ult : forall (x, y, z : bv), (x <=u y) -> (y <u z) -> (x <u z).
-     By @(trans_bv_ult 0 (x & s) t @(non_neg (x & s)) A), 0 <u t.
-     Lemma ult_implies_neq : forall (x, y : bv) x <u y -> x != y.
-     By @(ult_implies_neq 0 t), 0 != t. *)
-(*+ t != 0 -> exists x, x & s <u t
-    exists 0.
-    Goal: 0 & s <u t.
-    Lemma and_absorb_0 : forall (b : bv), 0 & b = 0.
-    By @(and_absorb_0 s), Goal: 0 <u t.
-    Lemma nonzero_implies_ltzero forall (b : bv) b != 0 -> 0 <u t.  
-    By @(nonzero_implies_ltzero t A), qed. *) 
+    assert (bv_non_neg : forall (b : bitvector), (zeros (size b)) = b
+      \/ (bv_ultP (zeros (size b)) b)). 
+      { admit. }
+    assert (H : (zeros (size (bv_and x s))) = (bv_and x s) \/
+      bv_ultP (zeros (size (bv_and x s))) (bv_and x s)).
+      { apply bv_non_neg. }
+    assert (trans_bv_ult : forall (x y z : bitvector), 
+      (x = y) \/ (bv_ultP x y) -> (bv_ultP y z) 
+      -> (bv_ultP x z)).
+      { admit. }
+    assert (H0 : bv_ultP (zeros (size t)) t).
+      { specialize (@trans_bv_ult (zeros (size (bv_and x s))) 
+          (bv_and x s) t H  A).
+        rewrite (@bv_and_size n x s Hx Hs) in trans_bv_ult.
+        rewrite <- Ht in trans_bv_ult. apply trans_bv_ult. }
+    apply (@bv_ult_not_eqP (zeros (size t)) t) in H0.
+    unfold not in *. intros. rewrite <- H1 in H0. now contradict H0.
+  + exists (zeros n). split.
+    - apply zeros_size.
+    - assert (bv_and_0_absorb : forall (b : bitvector), 
+        bv_and b (zeros (size b)) = (zeros (size b))).
+        { admit. }
+      rewrite (@bv_and_comm n (zeros n) s (@zeros_size n) Hs).
+      rewrite <- Hs. rewrite (@bv_and_0_absorb s). 
+      rewrite -> Hs. rewrite <- Ht. 
+      assert (bv_neq_zero_bv_ultP : forall (b : bitvector), 
+        b <> zeros (size b) -> bv_ultP (zeros (size b)) b).
+        { admit. }
+      apply bv_neq_zero_bv_ultP. apply A.
 Admitted.
 
 (* (exists x, x & s >u t) <=> (t <u s) *)
