@@ -680,7 +680,7 @@ Proof. split; intros.
            assert (size t = 0%N).
            Reconstr.reasy Reconstr.Empty (@Coq.NArith.BinNatDef.N.of_nat, @BV.BVList.RAWBITVECTOR_LIST.size).
            rewrite H in H2. cbn in H2. easy.
-           rewrite last_mk_lits_true. cbn.
+           rewrite last_mk_list_true. cbn.
            unfold bv_not, bits, zeros in H2. rewrite not_list_false_true in H2.
            unfold size in H2. rewrite Nat2N.id in H2.
            assert (length t = length s).
@@ -703,7 +703,7 @@ Proof. split; intros.
            unfold size in HH. rewrite Nat2N.id in HH.
            rewrite HH.
            assert ( (last (mk_list_false (length s)) false) = false).
-           now rewrite last_mk_lits_false.
+           now rewrite last_mk_list_false.
            rewrite H3. cbn.
            unfold bv_not, bits, zeros in H2.
            unfold size in H2. rewrite Nat2N.id in H2.
