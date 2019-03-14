@@ -1,5 +1,5 @@
-BVList.glob
-BVList.vo
+*.glob
+*.vo
 Makefile
 Makefile.conf
-.BVList.aux
+*.aux

@@ -1,0 +1,105 @@
+This document suggests how to navigate BVList.v, 
+specifically RAWBITVECTOR_LIST. Search for the keyword in the comment 
+beside the section name (if any) to look for the corresponding 
+section in BVList.v.
+
+-------------------------- Library Structure --------------------------
+
+
+Module Type BITVECTOR
+(*Dependently typed BVs.*)
+
+
+Module Type RAWBITVECTOR
+(* Non dependently typed BVs. Sizes are explicitly 
+mentioned. Easier to prove stuff. *)
+
+
+Module RAW2BITVECTOR (M:RAWBITVECTOR) <: BITVECTOR.
+(* Functor from non-dependently typed BV to 
+dependently typed BV. *)
+
+
+Module RAWBITVECTOR_LIST <: RAWBITVECTOR.
+(* Instantiation of non-dependently typed BVs. 
+All the implementation is done here. *)
+
+- Section Housekeeping
+  + Definitions and lemmas necessary for the module
+  + zeros definitions and lemmas
+  + one definitions and lemmas
+  + bv_concat definitions and lemmas
+
+- Equality (* equality *)
+  + Definitions (* eq-defs *)
+  + Theorems (* eq-thrms *)
+
+- Logical Operations (* Logical Operations *)
+  + And (* and *)
+    * Definitions (* and-defs *)
+    * Theorems (* and-thrms *)
+  + Or (* or *)
+    * Definitions (* or-defs *)
+    * Theorems (* or-thrms *)
+  + Xor (* xor *)
+    * Definitions (* xor-defs *)
+    * Theorems (* xor-thrms *)
+  + Not (* not *)
+    * Definitions (* not-defs *)
+    * Theorems (* not-thrms *)
+
+- Arithmetic Operations (* Arithmetic Operations *)
+  + Addition (* addition *)
+    * Definitions (* add-defs *)
+    * Theorems (* add-thrms *)
+  + Subtraction (* subtraction *)
+    * Definitions (* sub-defs *)
+    * Theorems (* sub-thrms *)
+  + Addition-Subtraction (* addition-subtraction *)
+    * Theorems (* addsub-thrms *)
+  + Multiplication (* multiplication *)
+    * Definitions (* mul-defs *)
+    * Theorems (* mul-thrms *)
+
+- Conversion Operations (* Conversion Operations *)
+  + Bitvectors -> Natural Numbers (* bv -> nat *)
+    * Definitions (* bv2nat-defs *)
+  + Natural Numbers -> Bitvectors (* nat -> bv *)
+    * Definitions (* nat2bv-defs *)
+    * Theorems (* nat2bv-thrms *)
+
+- Comparison Operations (* Comparison Operations *)
+  + Definitions (* comp-defs *)
+    * Unsigned greater than (* ugt-defs *)
+    * Unsigned less than (* ult-defs *)
+    * Signed less than (* slt-defs *)
+  + Theorems (* comp-thrms *)
+    * Unsigned greater than (* ugt-thrms *)
+    * Unsigned less than (* ult-thrms *)
+    * Signed less than (* slt-thrms *)
+
+- Shift Operations (* Shift Operations *)
+  + Shift Left (* shift left *)
+    * Definitions (* shl-defs *)
+    * Theorems (* shl-thrms *)
+  + Logical Shift Right (* logical shift right *)
+    * Definitions (* shr-defs *)
+    * Theorems (* shr-thrms *)
+  + Arithmetic Shift Right (* arithmetic shift right *)
+    * Definitions (* ashr-defs *)
+    * Theorems (* ashr-thrms *)
+
+- Other Operations (* Other Operations *)
+  + Bitvector Extraction (* extraction *)
+    * Definitions (* extr-defs *)
+    * Theorems (* extr-thrms *)
+  + Bitvector Sign Extension (* exension *)
+    * Definitions (* extn-defs *)
+    * Theorems (* extn-thrms *)
+    
+      
+Module BITVECTOR_LIST <: BITVECTOR.
+(* Instantiation of dependently typed BVs. Since 
+stuff is harder to prove here, RAWBITVECTOR_LIST 
+is mapped to this using RAW2BITVECTOR *)
+
