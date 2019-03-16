@@ -529,12 +529,16 @@ Proof.
   intros n s t Hs Ht.
   split. 
   + intros. destruct H as (x, (H0, H1)).
-    assert (bv_ugtP_not_1 : forall (a : bitvector), (exists (b : bitvector),
+    assert (bv_ugtP_not_1 : forall (n : N) (a : bitvector), size a = n /\
+      (exists (b : bitvector), size b = n /\
       bv_ugtP b a) -> ~ (a = bv_not (zeros (size a)))).
       { admit. }
     assert (Ht_limit : ~ (t = (bv_not (zeros (size t))))).
-      { specialize (@bv_ugtP_not_1 t). apply bv_ugtP_not_1. 
-        exists (bv_shl x s). apply H1. }
+      { specialize (@bv_ugtP_not_1 n t). apply bv_ugtP_not_1. split.
+        + apply Ht.
+        + exists (bv_shl x s). split. 
+          - apply bv_shl_size. apply H0. apply Hs. 
+          - apply H1. }
     assert (bv_not_eq_1_ultP_1 : forall (b : bitvector), 
       b <> (bv_not (zeros (size b))) -> 
       bv_ultP b (bv_not (zeros (size b)))).

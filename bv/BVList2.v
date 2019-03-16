@@ -2626,7 +2626,7 @@ Definition bv_ugtP (a b : bitvector) : Prop :=
 
 
 
-(* Unsigned less than *)
+(* unsigned less than *)
 (* ult-defs *)
 
 Fixpoint ult_list_big_endian (x y: list bool) :=

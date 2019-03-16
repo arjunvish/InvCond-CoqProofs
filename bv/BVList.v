@@ -2580,6 +2580,162 @@ Proof. intro x.
 Qed.
 
 
+
+(* forall a, (exists b, b > a) => (a != 1) *)
+Lemma rev_mk_list_true : forall n : nat, 
+  rev (mk_list_true n) = mk_list_true n.
+Proof. 
+  intros. induction n.
+  + easy.
+  + simpl. rewrite IHn. Admitted.
+
+Lemma not_ugt_list_big_endian_ones : forall (b : bitvector), 
+  ugt_list_big_endian (rev b) (rev (bv_not (zeros (size b)))) = false.
+Proof. 
+  intros. unfold zeros. unfold size. rewrite Nat2N.id.
+  rewrite bv_not_false_true.
+  assert (forall n : nat, rev (mk_list_true n) = mk_list_true n).
+  { apply rev_mk_list_true. }
+  rewrite H. rewrite <- rev_length.
+  induction (rev b).
+  + easy.
+  + simpl. destruct l.
+    - simpl. apply andb_false_r.
+    - rewrite IHl. rewrite andb_false_r. 
+      rewrite andb_false_r. easy.
+Qed.
+
+Lemma not_ugt_list_ones : forall (b : bitvector), 
+    ugt_list b (bv_not (zeros (size b))) = false.
+Proof.
+  intros. unfold ugt_list.
+  assert (forall (b : bitvector), ugt_list_big_endian (rev b)
+    (rev (bv_not (zeros (size b)))) = false).
+    { apply not_ugt_list_big_endian_ones. }
+  apply H.
+Qed.
+
+Lemma not_ugt_listP_ones : forall (b : bitvector),
+  ~ ugt_listP b (bv_not (zeros (size b))).
+Proof.
+  intros. unfold not. intros. unfold ugt_listP in H.
+  assert (forall (b : bitvector), 
+    ugt_list b (bv_not (zeros (size b))) = false).
+  { apply not_ugt_list_ones. }
+  specialize (@H0 b). rewrite H0 in H. apply H.
+Qed.
+
+Lemma not_bv_ugtP_ones : forall (b : bitvector),
+  ~ bv_ugtP b (bv_not (zeros (size b))).
+Proof.
+  intros. unfold not. intros. unfold bv_ugtP in H.
+  assert (H1 : size b = size (bv_not (zeros (size b)))).
+    { rewrite (@bv_not_size (size b) (zeros (size b))).
+      + easy.
+      + apply zeros_size. }
+  case_eq (size b =? size (bv_not (zeros (size b)))).
+  + intros. rewrite H0 in H.
+    assert (forall (b : bitvector), ~ ugt_listP b (bv_not (zeros (size b)))).
+      { apply not_ugt_listP_ones. }
+    specialize (@H2 b). unfold not in H2. apply H2. apply H.
+  + intros. rewrite H0 in H. apply H.
+Qed.
+
+Lemma bv_ugtP_not_ones : forall (n : N) (a : bitvector), size a = n /\
+      (exists (b : bitvector), size b = n /\
+      bv_ugtP b a) -> ~ (a = bv_not (zeros (size a))).
+Proof.
+  intros. destruct H as (Ha, (b, (Hb, H))). unfold not. 
+  intros. rewrite H0 in H. rewrite Ha in H.
+  rewrite <- Hb in H.
+  assert (forall (b : bitvector), ~ bv_ugtP b (bv_not (zeros (size b)))).
+  { apply not_bv_ugtP_ones. }
+  specialize (@H1 b). unfold not in H1. apply H1. apply H.
+Qed.
+
+
+(* b != 1 -> b < 1 *)
+
+Lemma bv_not_1_ult_list_big_endian_1 : forall (b : bitvector), 
+  b <> mk_list_true (length b)
+  -> ult_list_big_endian (rev b) (rev (mk_list_true (length b))) = true.
+Proof.
+  intros. rewrite rev_mk_list_true.
+  assert (rev_uneq : forall b : bitvector, b <> mk_list_true (length b)
+    -> (rev b) <> (rev (mk_list_true (length b)))).
+  { admit. }
+  apply rev_uneq in H. rewrite <- rev_length in *.
+  rewrite rev_mk_list_true in H.
+  destruct (rev b) as [| h t]. (*induction (rev b) as [| a l IHrev].*)
+  + now contradict H.
+  +  destruct h.
+    - induction t as [| h2 t2 IH].
+      * easy.
+      * destruct h2. 
+        { assert (forall (b : list bool), 
+            true :: b <> mk_list_true (length (true :: b)) -> 
+            b <> mk_list_true (length b)).
+            { admit. }
+          apply H0 in H. apply IH in H.
+          assert (forall (b : list bool), 
+            ult_list_big_endian b (mk_list_true (length b)) = true ->
+            ult_list_big_endian 
+            (true :: b) (mk_list_true (length (true :: b))) = true).
+            { admit. }
+          apply H1 in H. apply H. }
+        { assert (forall (b : list bool), 
+            ult_list_big_endian b (mk_list_true (length b)) = true ->
+            ult_list_big_endian 
+            (true :: b) (mk_list_true (length (true :: b))) = true).
+            { admit. }
+          apply H0. assert (forall (b : list bool), 
+            ult_list_big_endian (false :: b) 
+            (mk_list_true (length (false :: b))) = true).
+            { admit. }
+           apply H1. }
+     - assert (forall (b : list bool), 
+            ult_list_big_endian (false :: b) 
+            (mk_list_true (length (false :: b))) = true).
+            { admit. }
+       apply H0.
+Admitted.
+
+Lemma bv_not_eq_1_ult_listP :forall b : bitvector, 
+      b <> bv_not (zeros (size b)) -> 
+      ult_listP b (bv_not (zeros (size b))).
+Proof.
+  intros. unfold ult_listP.
+    case_eq (ult_list b (bv_not (zeros (size b)))).
+    + intros. easy.
+    + intros. unfold ult_list in H0. unfold zeros in *. 
+      unfold size in *. rewrite Nat2N.id in *.
+      rewrite bv_not_false_true in *.
+      assert (forall (b : bitvector), b <> mk_list_true (length b)
+        -> ult_list_big_endian (rev b) (rev (mk_list_true (length b))) = true).
+      { apply bv_not_1_ult_list_big_endian_1. }
+      specialize (@H1 b). specialize (@H1 H).
+      rewrite H0 in H1. now contradict H1. 
+Qed.
+
+Lemma bv_not_eq_1_ultP_1 : forall (b : bitvector), 
+      b <> (bv_not (zeros (size b))) -> 
+      bv_ultP b (bv_not (zeros (size b))).
+Proof.
+  intros. unfold bv_ultP.
+  assert (size b = size (bv_not (zeros (size b)))).
+  { rewrite (@bv_not_size (size b) (zeros (size b))).
+    + easy.
+    + rewrite zeros_size. easy. }
+  case_eq (size b =? size (bv_not (zeros (size b)))).
+  + intros. assert (forall b : bitvector, 
+      b <> bv_not (zeros (size b)) -> 
+      ult_listP b (bv_not (zeros (size b)))).
+      { apply bv_not_eq_1_ult_listP. }
+    apply H2. apply H.
+  + intros. rewrite <- H0 in H1.
+    rewrite eqb_neq in H1. now contradict H1.
+Qed.
+
 (** bitvector ult/slt *)
 
 Lemma rev_eq: forall x y, beq_list x y = true ->
@@ -3489,6 +3645,20 @@ Proof. intro n.
          rewrite H0. lia.
          now rewrite length_mk_list_false.
 Qed.
+
+
+Lemma bv_shl_1_eq_1 : forall (b : bitvector), 
+      bv_shl (bv_not (zeros (size b))) b = (bv_not (zeros (size b))).
+Proof.
+  intros. unfold zeros. unfold size. rewrite Nat2N.id.
+  rewrite bv_not_false_true.
+  destruct b.
+  + easy. 
+  + unfold bv_shl. case_eq (size (mk_list_true (length (b :: b0)))
+    =? size (b :: b0)).
+    - intros. admit.
+    - intros. unfold size in H. rewrite length_mk_list_true in H.
+  Admitted.
 
 (* Shift Right (Logical) *)
 
