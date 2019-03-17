@@ -2656,6 +2656,65 @@ Qed.
 
 (* b != 1 -> b < 1 *)
 
+Theorem rev_func : forall (b1 b2 : bitvector), b1 = b2 -> rev b1 = rev b2.
+Proof.
+  intros.
+  rewrite -> H.
+  reflexivity.
+Qed.
+
+Theorem rev_inj : forall (b1 b2 : bitvector), rev b1 = rev b2 -> b1 = b2.
+Proof.
+  intros.
+  rewrite <- rev_involutive with (l := b1).
+  rewrite <- rev_involutive with (l := b2).
+  apply rev_func.
+  apply H.
+Qed.
+
+Lemma rev_neg_func : forall (b1 b2 : bitvector), b1 <> b2 -> 
+  rev b1 <> rev b2.
+Proof.
+  intros. unfold not. intros. 
+  apply rev_inj in H0. unfold not in H.
+  apply H in H0. apply H0.
+Qed.
+
+Theorem rev_neg_inj : forall (b1 b2 : bitvector), rev b1 <> rev b2 -> 
+  b1 <> b2.
+Proof.
+  intros.
+  rewrite <- rev_involutive with (l := b1).
+  rewrite <- rev_involutive with (l := b2).
+  apply rev_neg_func. apply H.
+Qed.
+
+Lemma rev_uneq : forall b : bitvector, b <> mk_list_true (length b)
+    -> (rev b) <> (rev (mk_list_true (length b))).
+Proof. 
+  intros. apply rev_neg_inj. rewrite rev_involutive. rewrite rev_involutive.
+  apply H.
+Qed.
+
+Lemma ult_list_big_endian_tail_true : forall (bl : bool) (b : list bool),
+  ult_list_big_endian (bl :: b) (mk_list_true (length (true :: b))) = true ->
+  ult_list_big_endian b (mk_list_true (length b)) = true.
+Proof.
+  admit.
+Admitted.
+
+Lemma ult_list_big_endian_cons_true : forall (b : list bool), 
+  ult_list_big_endian b (mk_list_true (length b)) = true ->
+  ult_list_big_endian 
+  (true :: b) (mk_list_true (length (true :: b))) = true.
+Proof.
+  intros. induction b. 
+  + easy. 
+  + apply ult_list_big_endian_tail_true in H. specialize (@IHb H).
+    destruct a.
+    - admit.
+Admitted.
+
 Lemma bv_not_1_ult_list_big_endian_1 : forall (b : bitvector), 
   b <> mk_list_true (length b)
   -> ult_list_big_endian (rev b) (rev (mk_list_true (length b))) = true.
@@ -2663,7 +2722,7 @@ Proof.
   intros. rewrite rev_mk_list_true.
   assert (rev_uneq : forall b : bitvector, b <> mk_list_true (length b)
     -> (rev b) <> (rev (mk_list_true (length b)))).
-  { admit. }
+  { apply rev_uneq. }
   apply rev_uneq in H. rewrite <- rev_length in *.
   rewrite rev_mk_list_true in H.
   destruct (rev b) as [| h t]. (*induction (rev b) as [| a l IHrev].*)
@@ -2696,7 +2755,7 @@ Proof.
      - assert (forall (b : list bool), 
             ult_list_big_endian (false :: b) 
             (mk_list_true (length (false :: b))) = true).
-            { admit. }
+            { intros. induction b0; easy. }
        apply H0.
 Admitted.
 
@@ -3647,18 +3706,32 @@ Proof. intro n.
 Qed.
 
 
+(* forall b, 1 << b = 1 *)
+Lemma shl_aux_1_eq_1 : forall b : bitvector, 
+      shl_aux (mk_list_true (length b)) b = mk_list_true (length b).
+Proof.
+  intros. unfold shl_aux. induction (list2nat_be_a b).
+  + easy. 
+  + unfold shl_n_bits. Print shl_n_bits. unfold shl_n_bits.
+  unfold shl_n_bits.
+Admitted.
+
 Lemma bv_shl_1_eq_1 : forall (b : bitvector), 
       bv_shl (bv_not (zeros (size b))) b = (bv_not (zeros (size b))).
 Proof.
   intros. unfold zeros. unfold size. rewrite Nat2N.id.
-  rewrite bv_not_false_true.
-  destruct b.
-  + easy. 
-  + unfold bv_shl. case_eq (size (mk_list_true (length (b :: b0)))
-    =? size (b :: b0)).
-    - intros. admit.
-    - intros. unfold size in H. rewrite length_mk_list_true in H.
-  Admitted.
+  rewrite bv_not_false_true. unfold bv_shl.
+  case_eq (size (mk_list_true (length b)) =? size b).
+  + intros. assert (forall b : bitvector, 
+      shl_aux (mk_list_true (length b)) b = mk_list_true (length b)).
+      { apply shl_aux_1_eq_1. }
+      apply H0.
+  + intros. unfold size in H. rewrite length_mk_list_true in H. 
+      assert (forall n : N, n =? n = true). 
+      { apply eqb_refl. }
+      specialize (@H0 (N.of_nat (length b))). 
+      rewrite H0 in H. now contradict H.
+Qed.
 
 (* Shift Right (Logical) *)
 
