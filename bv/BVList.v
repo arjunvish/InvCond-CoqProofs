@@ -2096,6 +2096,42 @@ Proof. unfold ult_list. intros x y z. apply ult_list_big_endian_trans.
 Qed.
 
 
+Lemma ult_listP_trans : forall (b1 b2 b3 : bitvector),
+  ult_listP b1 b2 -> ult_listP b2 b3 -> ult_listP b1 b3.
+Proof.
+  unfold ult_listP. unfold ult_list. intros.
+  case_eq (ult_list_big_endian (rev b1) (rev b3)).
+  + intros. easy.
+  + intros. case_eq (ult_list_big_endian (rev b1) (rev b2)).
+    - intros. case_eq (ult_list_big_endian (rev b2) (rev b3)).
+      * intros. pose proof ult_list_big_endian_trans.
+        specialize (@H4 (rev b1) (rev b2) (rev b3) H2 H3). 
+        rewrite H4 in H1. now contradict H1. 
+      * intros. rewrite H3 in H0. apply H0.
+    - intros. rewrite H2 in H. apply H.
+Qed.
+
+Lemma bv_ultP_trans : forall (b1 b2 b3 : bitvector), 
+  bv_ultP b1 b2 -> bv_ultP b2 b3 -> bv_ultP b1 b3.
+Proof.
+  intros. unfold bv_ultP in *. case_eq (size b1 =? size b2).
+  + intros. pose proof H as bv_ultP_b1_b2. 
+    rewrite H1 in bv_ultP_b1_b2. case_eq (size b2 =? size b3).
+    - intros. pose proof H0 as bv_ultP_b2_b3. 
+      rewrite H2 in bv_ultP_b2_b3. case_eq (size b1 =? size b3).
+      * intros. pose proof ult_listP_trans as ult_listP_trans.  
+        specialize (@ult_listP_trans b1 b2 b3 bv_ultP_b1_b2 bv_ultP_b2_b3). 
+        apply ult_listP_trans. 
+      * intros. apply Neqb_ok in H1. apply Neqb_ok in H2. rewrite <- H1 in H2.
+        rewrite H2 in H3. pose proof eqb_refl as eqb_refl.
+        specialize (@eqb_refl (size b3)). rewrite H3 in eqb_refl.
+        now contradict eqb_refl.
+    - intros. rewrite H2 in H0. now contradict H0.
+  + intros. pose proof H as bv_ultP_b1_b2. rewrite H1 in H. 
+    now contradict H.
+Qed.
+
+
 (* forall x y, x < y => x != y *)
 (* Unsigned less than *)
 Lemma ult_list_big_endian_not_eq : forall x y,
@@ -3712,7 +3748,17 @@ Lemma shl_aux_1_eq_1 : forall b : bitvector,
 Proof.
   intros. unfold shl_aux. induction (list2nat_be_a b).
   + easy. 
-  + unfold shl_n_bits. Print shl_n_bits. unfold shl_n_bits.
+  + assert (shl_n_bits (mk_list_true (length b)) (S n) = 
+            (shl_n_bits (shl_one_bit (mk_list_true (length b))) n)).
+    { easy. }
+    rewrite H.
+    assert (shl_one_bit (mk_list_true (length b)) = 
+            mk_list_true (length b)).
+    { unfold shl_one_bit. destruct (length b).
+      + easy.
+      + simpl.  
+
+ unfold shl_n_bits.  simpl. Print shl_n_bits. unfold shl_n_bits.
   unfold shl_n_bits.
 Admitted.
 

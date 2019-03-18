@@ -529,6 +529,18 @@ Proof.
   intros n s t Hs Ht.
   split. 
   + intros. destruct H as (x, (H0, H1)).
+    apply bv_ugtP_bv_ultP in H1. 
+    assert (bv_ultP (bv_shl x s) (bv_shl (bv_not (zeros (size s))) s) \/
+            (bv_shl x s) = (bv_shl (bv_not (zeros (size s))) s)).
+    { admit. }
+    assert (bv_ultP_eq_trans : forall b1 b2 b3 : bitvector, 
+            bv_ultP b1 b2 -> bv_ultP b2 b3 \/ b2 = b3 -> 
+            bv_ultP b1 b3).
+    { admit. }
+    specialize (@bv_ultP_eq_trans t (bv_shl x s) 
+              (bv_shl (bv_not (zeros (size s))) s) H1 H).
+    apply bv_ultP_eq_trans.
+(*  + intros. destruct H as (x, (H0, H1)).
     assert (bv_ugtP_not_1 : forall (n : N) (a : bitvector), size a = n /\
       (exists (b : bitvector), size b = n /\
       bv_ugtP b a) -> ~ (a = bv_not (zeros (size a)))).
@@ -549,7 +561,7 @@ Proof.
       bv_shl (bv_not (zeros (size b))) b = (bv_not (zeros (size b)))).
       { admit. }
     specialize (@bv_shl_1_eq_1 s). rewrite -> bv_shl_1_eq_1.
-    rewrite -> Hs. rewrite <- Ht. apply bv_not_eq_1_ultP_1. 
+    rewrite -> Hs. rewrite <- Ht. apply bv_not_eq_1_ultP_1. *)
   + intro. exists (bv_not (zeros (size s))).
     split. 
     - apply bv_not_size. rewrite (zeros_size (size s)). 
