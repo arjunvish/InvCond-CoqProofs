@@ -45,7 +45,7 @@ Proof.
 
 Lemma bvgez: forall a: bitvector, (bv2nat_a a = 0) \/ (bv2nat_a a > 0).
 Proof. intro a.
-       induction a; intros.
+       induction a.
        - cbn. left. easy.
        - case_eq a; intros.
          + right. unfold bv2nat_a, list2nat_be_a.
@@ -528,40 +528,21 @@ Theorem bvshl_ugt : forall (n : N), forall (s t : bitvector),
 Proof.
   intros n s t Hs Ht.
   split. 
-  + intros. destruct H as (x, (H0, H1)).
+  + intros. destruct H as (x, (Hx, H1)).
     apply bv_ugtP_bv_ultP in H1. 
-    assert (bv_ultP (bv_shl x s) (bv_shl (bv_not (zeros (size s))) s) \/
-            (bv_shl x s) = (bv_shl (bv_not (zeros (size s))) s)).
-    { admit. }
+    assert (forall (n : N) (x s : bitvector), size x = n 
+            -> size s = n -> 
+            bv_uleP (bv_shl x s) 
+              (bv_shl (bv_not (zeros (size s))) s)).
+    { admit. (*apply bv_shl_1_leq.*) }
     assert (bv_ultP_eq_trans : forall b1 b2 b3 : bitvector, 
-            bv_ultP b1 b2 -> bv_ultP b2 b3 \/ b2 = b3 -> 
+            bv_ultP b1 b2 -> bv_uleP b2 b3 -> 
             bv_ultP b1 b3).
     { admit. }
+    specialize (@H n x s Hx Hs).
     specialize (@bv_ultP_eq_trans t (bv_shl x s) 
               (bv_shl (bv_not (zeros (size s))) s) H1 H).
     apply bv_ultP_eq_trans.
-(*  + intros. destruct H as (x, (H0, H1)).
-    assert (bv_ugtP_not_1 : forall (n : N) (a : bitvector), size a = n /\
-      (exists (b : bitvector), size b = n /\
-      bv_ugtP b a) -> ~ (a = bv_not (zeros (size a)))).
-      { admit. }
-    assert (Ht_limit : ~ (t = (bv_not (zeros (size t))))).
-      { specialize (@bv_ugtP_not_1 n t). apply bv_ugtP_not_1. split.
-        + apply Ht.
-        + exists (bv_shl x s). split. 
-          - apply bv_shl_size. apply H0. apply Hs. 
-          - apply H1. }
-    assert (bv_not_eq_1_ultP_1 : forall (b : bitvector), 
-      b <> (bv_not (zeros (size b))) -> 
-      bv_ultP b (bv_not (zeros (size b)))).
-      { admit. }
-    specialize (@bv_not_eq_1_ultP_1 t). 
-    specialize (@bv_not_eq_1_ultP_1 Ht_limit).
-    assert (bv_shl_1_eq_1 : forall (b : bitvector), 
-      bv_shl (bv_not (zeros (size b))) b = (bv_not (zeros (size b)))).
-      { admit. }
-    specialize (@bv_shl_1_eq_1 s). rewrite -> bv_shl_1_eq_1.
-    rewrite -> Hs. rewrite <- Ht. apply bv_not_eq_1_ultP_1. *)
   + intro. exists (bv_not (zeros (size s))).
     split. 
     - apply bv_not_size. rewrite (zeros_size (size s)). 
