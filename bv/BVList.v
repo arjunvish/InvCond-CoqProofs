@@ -2065,70 +2065,121 @@ Qed.
 
 (* some list ult and slt properties *)
 
+Lemma ult_list_big_endian_implies_ule : forall x y,
+  ult_list_big_endian x y = true -> ule_list_big_endian x y = true.
+Admitted.
+
+Lemma ult_eq_list_big_endian_trans : forall x y z, 
+  ult_list_big_endian x y = true ->
+  ule_list_big_endian y z = true -> 
+  ult_list_big_endian x z = true.
+Proof.
+  intros x. induction x.
+  + simpl. easy. 
+  + intros y z. case y.
+    - simpl. case x; easy.
+    - intros b l. intros. simpl in *. case x in *.
+      * case z in *.
+        { case l in *; easy. }
+        { case l in *.
+          + rewrite andb_true_iff in H. destruct H.
+            apply negb_true_iff in H. subst. simpl.
+            case z in *.
+            * rewrite orb_true_iff in H0. destruct H0.
+              - apply eqb_prop in H. symmetry. apply H.
+              - rewrite andb_true_iff in H. destruct H.
+                simpl in H. now contradict H.
+            * rewrite !orb_true_iff, !andb_true_iff in H0. 
+              destruct H0.
+              - destruct H. apply Bool.eqb_prop in H.
+                subst. rewrite orb_true_iff. now right.
+              - destruct H. easy. 
+          + rewrite !orb_true_iff, !andb_true_iff in H, H0.
+            destruct H.
+            * simpl in H. easy. 
+            * destruct H. apply negb_true_iff in H. subst. 
+              simpl.  destruct H0.
+              - destruct H. apply Bool.eqb_prop in H.
+                subst. case z; easy.
+              - destruct H. easy. }
+      * case l in *.
+        { rewrite !orb_true_iff, !andb_true_iff in H.
+          simpl in H. destruct H.
+          + destruct H. case x in H1; easy.
+          + destruct H. apply negb_true_iff in H.
+            subst. simpl in H0. case z in *.
+            * easy.
+            * case b in *.
+              - simpl in H0. case z in *; easy.
+              - simpl in H0. case z in *; easy. }
+        { case z in *; try easy.
+          rewrite !orb_true_iff, !andb_true_iff in *.
+          destruct H.
+          + destruct H. destruct H0.
+            * destruct H0. apply Bool.eqb_prop in H.
+              apply Bool.eqb_prop in H0. subst. left. split.
+              - apply Bool.eqb_reflx.
+              - apply ult_list_big_endian_implies_ule in H2. 
+                now apply (IHx (b1 :: l) z H1 H2).
+            * right. apply Bool.eqb_prop in H. now subst.
+          + right. destruct H0.
+            * destruct H0. apply Bool.eqb_prop in H0. now subst.
+            * split; easy. }
+Qed.
+
 Lemma ult_list_big_endian_trans : forall x y z,
     ult_list_big_endian x y = true ->
     ult_list_big_endian y z = true ->
     ult_list_big_endian x z = true.
 Proof.
   intros x. induction x.
-  simpl. easy.
-  intros y z.
-  case y.
-  simpl. case x; easy.
-  intros b l.
-  intros.
-  simpl in *. case x in *.
-  case z in *. simpl in H0. case l in *; easy.
-  case l in *.
-  rewrite andb_true_iff in H.
-  destruct H.
-  apply negb_true_iff in H. subst.
-  simpl. case z in *. easy.
-  rewrite !orb_true_iff, !andb_true_iff in H0.
-  destruct H0.
-  destruct H.
-  apply Bool.eqb_prop in H.
-  subst.
-  rewrite orb_true_iff. now right.
-  destruct H. easy.
-  rewrite !orb_true_iff, !andb_true_iff in H, H0.
-  destruct H.
-  simpl in H. easy.
-  destruct H.
-  apply negb_true_iff in H. subst.
-  simpl.
-  destruct H0.
-  destruct H.
-  apply Bool.eqb_prop in H.
-  subst.
-  case z; easy.
-  destruct H. easy.
-  case l in *.
-  rewrite !orb_true_iff, !andb_true_iff in H.
-  simpl in H. destruct H. destruct H. case x in H1; easy.
-  destruct H.
-  apply negb_true_iff in H. subst.
-  simpl in H0.
-  case z in *; try easy.
-  case z in *; simpl in H0; try easy.
-  case b in H0; simpl in H0; try easy.
-  case z in *; try easy.
-  rewrite !orb_true_iff, !andb_true_iff in *.
-  destruct H.
-  destruct H.
-  destruct H0.
-  destruct H0.
-  apply Bool.eqb_prop in H.
-  apply Bool.eqb_prop in H0.
-  subst.
-  left.
-  split.
-  apply Bool.eqb_reflx.
-  now apply (IHx (b1 :: l) z H1 H2).
-  right. apply Bool.eqb_prop in H. now subst.
-  right. destruct H0, H0.
-  apply Bool.eqb_prop in H0. now subst.
-  split; easy.
+  + simpl. easy.
+  + intros y z. case y.
+    - simpl. case x; easy.
+    - intros b l. intros. simpl in *. case x in *.
+      * case z in *. 
+        { case l in *; easy. } 
+        { case l in *.
+          + rewrite andb_true_iff in H. destruct H.
+            apply negb_true_iff in H. subst. simpl. 
+            case z in *. 
+            * easy.
+            * rewrite !orb_true_iff, !andb_true_iff in H0.
+              destruct H0.
+              - destruct H. apply Bool.eqb_prop in H.
+                subst. rewrite orb_true_iff. now right.
+              - destruct H. easy.
+          + rewrite !orb_true_iff, !andb_true_iff in H, H0.
+            destruct H.
+            * simpl in H. easy.
+            * destruct H. apply negb_true_iff in H. subst. 
+              simpl. destruct H0. 
+              - destruct H. apply Bool.eqb_prop in H.
+                subst. case z; easy.
+              - destruct H. easy. }
+      * case l in *.
+        { rewrite !orb_true_iff, !andb_true_iff in H.
+          simpl in H. destruct H.
+          + destruct H. case x in H1; easy.
+          + destruct H. apply negb_true_iff in H. subst.
+            simpl in H0. case z in *.
+            * easy.
+            * case b in H0.
+              - simpl in H0. case z in *; easy.
+              - simpl in H0. case z in *; easy. }
+        { case z in *.
+          + easy.
+          + rewrite !orb_true_iff, !andb_true_iff in *.
+            destruct H.
+            *  destruct H. destruct H0.
+               -  destruct H0. apply Bool.eqb_prop in H. 
+                  apply Bool.eqb_prop in H0. subst. left. split.
+                  { apply Bool.eqb_reflx. }
+                  { now apply (IHx (b1 :: l) z H1 H2). }
+               - right. apply Bool.eqb_prop in H. now subst. 
+            * right. destruct H0.
+               { destruct H0. apply Bool.eqb_prop in H0. now subst. }
+               { split; easy. } }
 Qed.  
   
 
