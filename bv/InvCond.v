@@ -538,7 +538,7 @@ Proof.
     assert (bv_ultP_eq_trans : forall b1 b2 b3 : bitvector, 
             bv_ultP b1 b2 -> bv_uleP b2 b3 -> 
             bv_ultP b1 b3).
-    { admit. }
+    { apply bv_ult_uleP_trans. }
     specialize (@H n x s Hx Hs).
     specialize (@bv_ultP_eq_trans t (bv_shl x s) 
               (bv_shl (bv_not (zeros (size s))) s) H1 H).
