@@ -2066,6 +2066,7 @@ Qed.
 
 (* some list ult and slt properties *)
 
+(* Transitivity : x < y => y < z => x < z *)
 Lemma ult_list_big_endian_trans : forall x y z,
     ult_list_big_endian x y = true ->
     ult_list_big_endian y z = true ->
@@ -2121,12 +2122,32 @@ Proof.
                { split; easy. } }
 Qed.  
   
-
+(* bool output *)
 Lemma ult_list_trans : forall x y z,
     ult_list x y = true -> ult_list y z = true -> ult_list x z = true.
 Proof. unfold ult_list. intros x y z. apply ult_list_big_endian_trans.
 Qed.
 
+Lemma bv_ult_trans : forall (b1 b2 b3 : bitvector), 
+  bv_ult b1 b2 = true -> bv_ult b2 b3 = true -> bv_ult b1 b3 = true.
+Proof.
+  intros. unfold bv_ult in *. case_eq (size b1 =? size b2).
+  + intros. pose proof H as bv_ult_b1_b2. 
+    rewrite H1 in H. case_eq (size b2 =? size b3).
+    - intros. pose proof H0 as bv_ult_b2_b3.
+      rewrite H2 in H0. case_eq (size b1 =? size b3).
+      * intros. pose proof ult_list_trans as ult_list_trans.
+        specialize (@ult_list_trans b1 b2 b3 H H0).
+        apply ult_list_trans.
+      * intros. apply Neqb_ok in H1. apply Neqb_ok in H2. rewrite <- H1 in H2.
+        rewrite H2 in H3. pose proof eqb_refl as eqb_refl.
+        specialize (@eqb_refl (size b3)). rewrite H3 in eqb_refl.
+        now contradict eqb_refl.
+    - intros. rewrite H2 in H0. now contradict H0.
+  + intros. rewrite H1 in H. now contradict H.
+Qed.
+
+(* Prop output *)
 Lemma ult_listP_trans : forall (b1 b2 b3 : bitvector),
   ult_listP b1 b2 -> ult_listP b2 b3 -> ult_listP b1 b3.
 Proof.
@@ -2161,14 +2182,10 @@ Proof.
   + intros. rewrite H1 in H. now contradict H.
 Qed.
 
-Lemma bv_ultP_eq_trans : forall b1 b2 b3 : bitvector, 
-            bv_ultP b1 b2 -> bv_ultP b2 b3 \/ b2 = b3 -> 
-            bv_ultP b1 b3.
-Admitted.
 
+(* x < y => y <= z => x < z *)
 
-(* forall x y z, x < y => y <= z => x < z *)
-
+(* x < y => x <= y *)
 Lemma ult_list_big_endian_implies_ule : forall x y,
   ult_list_big_endian x y = true -> ule_list_big_endian x y = true.
 Proof.
@@ -2248,11 +2265,33 @@ Proof.
             * split; easy. }
 Qed.
 
+(* bool output *)
 Lemma ult_ule_list_trans : forall x y z,
   ult_list x y = true -> ule_list y z = true -> ult_list x z = true.
 Proof.
   unfold ult_list, ule_list. intros x y z. apply ult_ule_list_big_endian_trans. 
 Qed.
+
+Lemma bv_ult_ule_list_trans : forall (b1 b2 b3 : bitvector), 
+  bv_ult b1 b2 = true -> bv_ule b2 b3 = true -> bv_ult b1 b3 = true.
+Proof.
+  intros. unfold bv_ult, bv_ule in *. case_eq (size b1 =? size b2).
+  + intros. pose proof H as bv_ult_b1_b2.
+    rewrite H1 in bv_ult_b1_b2. case_eq (size b2 =? size b3).
+    - intros. pose proof H0 as bv_ule_b2_b3.
+      rewrite H2 in bv_ule_b2_b3. case_eq (size b1 =? size b3).
+      * intros. pose proof ult_ule_list_trans as ult_ule_list_trans.
+        specialize (@ult_ule_list_trans b1 b2 b3 bv_ult_b1_b2 bv_ule_b2_b3).
+        apply ult_ule_list_trans.
+      * intros. apply Neqb_ok in H1. apply Neqb_ok in H2. rewrite <- H1 in H2.
+        rewrite H2 in H3. pose proof eqb_refl as eqb_refl.
+        specialize (@eqb_refl (size b3)). rewrite H3 in eqb_refl.
+        now contradict eqb_refl.
+    - intros. rewrite H2 in H0. now contradict H0.
+  + intros. rewrite H1 in H. now contradict H.
+Qed.
+ 
+(* Prop output *)
 Lemma ult_ule_listP_trans : forall (b1 b2 b3 : bitvector),
   ult_listP b1 b2 -> ule_listP b2 b3 -> ult_listP b1 b3.
 Proof.
