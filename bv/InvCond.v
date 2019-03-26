@@ -529,19 +529,19 @@ Proof.
   intros n s t Hs Ht.
   split. 
   + intros. destruct H as (x, (Hx, H1)).
-    apply bv_ugtP_bv_ultP in H1. 
+    apply bv_ugtP_bv_ultP in H1. rewrite bv_shl_eq in *. 
     assert (forall (n : N) (x s : bitvector), size x = n 
             -> size s = n -> 
-            bv_uleP (bv_shl x s) 
-              (bv_shl (bv_not (zeros (size s))) s)).
+            bv_uleP (bv_shl_a x s) 
+              (bv_shl_a (bv_not (zeros (size s))) s)).
     { admit. (*apply bv_shl_1_leq.*) }
     assert (bv_ultP_eq_trans : forall b1 b2 b3 : bitvector, 
             bv_ultP b1 b2 -> bv_uleP b2 b3 -> 
             bv_ultP b1 b3).
     { apply bv_ult_uleP_trans. }
     specialize (@H n x s Hx Hs).
-    specialize (@bv_ultP_eq_trans t (bv_shl x s) 
-              (bv_shl (bv_not (zeros (size s))) s) H1 H).
+    specialize (@bv_ultP_eq_trans t (bv_shl_a x s) 
+              (bv_shl_a (bv_not (zeros (size s))) s) H1 H).
     apply bv_ultP_eq_trans.
   + intro. exists (bv_not (zeros (size s))).
     split. 
