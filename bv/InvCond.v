@@ -534,7 +534,7 @@ Proof.
             -> size s = n -> 
             bv_uleP (bv_shl_a x s) 
               (bv_shl_a (bv_not (zeros (size s))) s)).
-    { admit. (*apply bv_shl_1_leq.*) }
+    { apply bv_shl_a_1_leq. }
     assert (bv_ultP_eq_trans : forall b1 b2 b3 : bitvector, 
             bv_ultP b1 b2 -> bv_uleP b2 b3 -> 
             bv_ultP b1 b3).
