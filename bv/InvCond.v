@@ -421,6 +421,25 @@ Theorem bvshr_ugt : forall (n : N), forall (s t : bitvector),
     (exists (x : bitvector), (size x = n) /\ bv_ugtP (bv_shr x s) t)
     (bv_ultP t (bv_shr (bv_not s) s)).
 Proof. 
+  intros. split. 
+  + intros. destruct H1 as (x, (Hs, H1)). apply bv_ugtP_bv_ultP in H1.
+    assert (forall (a b : bitvector), bv_uleP (bv_shr a b) (bv_shr (bv_not b) b)).
+    { (* Prove: ~s has S leading 1s, where S = BV2NAT(s).
+         Then, ~s >> S has S leading 0s and (len(s) - S) trailings 1s.
+         forall x, x >> S has S leading 0s and (len(s) - S) somethings.
+                         B       len(b)-B  
+         (~s >> S) = (00...0) ++ (11...1)
+         (x  >> S) = (00...0) ++ (xx...x)
+         We know (xx...x) <= (11...1).
+         Thus, [(00...0) ++ (xx...x)] <= [(00...0) ++ (11...1)].
+         Thus, (x >> s) <= (~s >> s). *)
+         admit. }
+    specialize (@H2 x s). pose proof bv_ult_uleP_trans.
+    specialize (@H3 t (bv_shr x s) (bv_shr (bv_not s) s) H1 H2).
+    apply H3.
+  + intros. exists (bv_not s). split.
+    - apply (@bv_not_size n s H).
+    - apply bv_ultP_bv_ugtP in H1. apply H1. 
 Admitted.
 
 (* (exists x, (s >> x) >u t) <=> (t <u s) *)
