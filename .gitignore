@@ -1,0 +1,9 @@
+/bv/Paper/example/
+/bv/Paper/*.aux
+/bv/Paper/*.bbl
+/bv/Paper/*.blg
+/bv/Paper/*.log
+/bv/Paper/*.out
+/bv/Paper/*.pag
+/bv/Paper/*.gz
+/bv/Paper/pxtp.tex.*
