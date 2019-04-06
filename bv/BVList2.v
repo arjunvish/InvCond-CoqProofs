@@ -3931,13 +3931,11 @@ Proof.
       * fold ult_list_big_endian. apply H.
 Qed.
 
-Lemma bv_leq_1_aux : forall (b : list bool), 
-  ule_list b (mk_list_true (N.to_nat (size b))) = true.
+Lemma ule_list_big_endian_1 : forall (l : list bool), 
+ule_list_big_endian l (mk_list_true (length l)) = true.
 Proof.
-  intros. unfold size. rewrite Nat2N.id. unfold ule_list.
-  rewrite rev_mk_list_true. rewrite <- rev_length.
-  induction (rev b).
-  + easy.
+  intros. induction l.
+  + easy. 
   + case_eq a.
     - intros.
       assert (forall (n : nat), mk_list_true (S n) = true :: mk_list_true n).
@@ -3945,31 +3943,35 @@ Proof.
       assert (forall (b : bool) (l : list bool), length (b :: l) = S (length l)).
       { intros. induction l0; easy. } 
       rewrite H1. rewrite H0.
-      assert (forall (b1 b2 : list bool), ule_list_big_endian b1 b2 = true ->
-              ule_list_big_endian (true :: b1) (true :: b2) = true).
-      { apply ule_list_big_endian_true. }
-      specialize (@H2 l (mk_list_true (length l)) IHl). apply H2.
+      apply (@ule_list_big_endian_true l (mk_list_true (length l)) IHl).
     - intros. unfold ule_list_big_endian. 
       case_eq l; easy.
 Qed.
 
-Lemma bv_leq_1_size : forall (x : bitvector), bv_uleP x (mk_list_true (N.to_nat (size x))).
+Lemma ule_list_1 : forall (b : list bool), 
+  ule_list b (mk_list_true (N.to_nat (size b))) = true.
+Proof.
+  intros. unfold size. rewrite Nat2N.id. unfold ule_list.
+  rewrite rev_mk_list_true. rewrite <- rev_length. apply (@ule_list_big_endian_1 (rev b)).
+Qed.
+
+Lemma bv_uleP_1_size : forall (x : bitvector), bv_uleP x (mk_list_true (N.to_nat (size x))).
 Proof.
   intros. induction x.
   + easy. 
   + unfold bv_uleP. 
     case_eq (size (a :: x) =? size (mk_list_true (N.to_nat (size (a :: x))))).
-    - intros. unfold ule_listP. rewrite bv_leq_1_aux. easy.
+    - intros. unfold ule_listP. rewrite ule_list_1. easy.
     - intros. unfold size in H. rewrite Nat2N.id in H.
       rewrite length_mk_list_true in H.
       pose proof (@eqb_refl (N.of_nat (length (a :: x)))) as eqb_refl.
       rewrite eqb_refl in H. now contradict H.
 Qed.
 
-Lemma bv_leq_1_length : forall (x : bitvector),
+Lemma bv_uleP_1_length : forall (x : bitvector),
   bv_uleP x (mk_list_true (length x)).
 Proof.
-  intros. pose proof (@bv_leq_1_size x). unfold size in H.
+  intros. pose proof (@bv_uleP_1_size x). unfold size in H.
   rewrite Nat2N.id in H. apply H.
 Qed.
 
