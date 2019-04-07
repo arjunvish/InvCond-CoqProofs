@@ -4091,25 +4091,22 @@ Proof.
 Qed.
 
 Lemma length_eq_firstn_eq : forall (n : nat) (x y : bitvector), 
-length x = length y -> length (firstn n x) = length (firstn n y).
+length x = length y -> (n < length x)%nat -> length (firstn n x) = length (firstn n y).
 Proof.
-  intros. induction n.
+  intros n x y len_xy lt_n_lenx. induction n.
   + easy.
   + destruct x.
     - simpl. destruct y.
       * easy.
-      * now contradict H.
+      * now contradict len_xy.
     - destruct y.
-      * now contradict H.
-      * rewrite firstn_cons. simpl. apply eq_S. simpl in H. 
-        apply (@eq_add_S (length x) (length y)) in H.
-        assert (forall (n : nat) (x y : bool) (l1 l2 : list bool),
-                length l1 = length l2 ->
-                length (firstn n (x :: l1)) = length (firstn n (y :: l2)) ->
-                length (firstn n l1) = length (firstn n l2)).
-        { admit. }
-        specialize (@H0 n b b0 x y H). apply H0 in IHn. apply IHn.
-Admitted.
+      * now contradict len_xy.
+      * pose proof lt_n_lenx as lt_n_leny. rewrite len_xy in lt_n_leny.
+        apply Nat.lt_le_incl in lt_n_lenx. apply Nat.lt_le_incl in lt_n_leny.
+        rewrite (@firstn_length_le bool (b :: x) (S n) lt_n_lenx).
+        rewrite (@firstn_length_le bool (b0 :: y) (S n) lt_n_leny).
+        easy.
+Qed.
 
 Lemma ule_list_big_endian_refl : forall (b : list bool), 
   ule_list_big_endian b b = true.
@@ -4131,7 +4128,24 @@ Qed.
 Lemma prefix_mk_list_true : forall x y : nat, (x < y)%nat -> 
   firstn x (mk_list_true y) = mk_list_true x.
 Proof.
-Admitted.
+  intros x y ltxy. induction x.
+  + easy.
+  + induction y.
+    - easy.
+    - simpl. pose proof ltxy as ltxy2. apply lt_S_n in ltxy2. 
+      pose proof ltxy2 as ltxSy. apply Nat.lt_lt_succ_r in ltxSy.
+      apply IHx in ltxSy. rewrite <- ltxSy. Search mk_list_true. 
+      rewrite mk_list_true_app. rewrite firstn_app. rewrite length_mk_list_true.
+      SearchPattern (forall x y, (x < y)%nat -> _).
+      assert (forall (n m : nat), (n < m)%nat -> Nat.sub n m = O).
+      { induction n.
+        + easy.
+        + induction m.
+          - intros. now contradict H.
+          - intros. simpl. apply lt_S_n in H. specialize (@IHn m H). apply IHn.
+      }
+      specialize (@H x y ltxy2). rewrite H. simpl. rewrite app_nil_r. easy.
+Qed.
 
 Lemma bv_uleP_1_firstn : forall (n : nat) (x : bitvector), (n < length x)%nat ->
         bv_uleP (firstn n x) (firstn n (mk_list_true (length x))).
@@ -4155,15 +4169,15 @@ Proof.
           rewrite firstn_length_le; easy. } 
         rewrite H3 at 2. apply ule_list_big_endian_1. }
       rewrite H3 in H1. now contradict H1.
-  + intros. assert (length x = length (mk_list_true (length x))).
+  + intros size_x_mlt. assert (length_x_mlt : length x = length (mk_list_true (length x))).
     { rewrite length_mk_list_true. easy. } 
     pose proof length_eq_firstn_eq as length_eq_firstn_eq.
-    specialize (@length_eq_firstn_eq n x (mk_list_true (length x))).
-    apply length_eq_firstn_eq in H1. unfold size in H0. rewrite H1 in H0.
-    pose proof eqb_refl as eqb_refl. 
+    unfold size in size_x_mlt. pose proof eqb_refl as eqb_refl. 
     specialize (@eqb_refl (N.of_nat (length (firstn n (mk_list_true (length x)))))).
-    rewrite eqb_refl in H0. now contradict H0.
-Admitted.
+    specialize (@length_eq_firstn_eq n x (mk_list_true (length x)) length_x_mlt H).
+    rewrite length_eq_firstn_eq in size_x_mlt. rewrite eqb_refl in size_x_mlt.
+    now contradict size_x_mlt.
+Qed.
 
 
 (* x <= y -> z ++ x <= z ++ y *)
@@ -4174,6 +4188,22 @@ Proof.
   + easy.
   + simpl. pose proof eq_S. specialize (@H0 (length (z ++ x)) (length (z ++ y))).
     apply H0 in IHz. apply IHz.
+Qed.
+
+Lemma ule_list_big_endian_app : forall (x y z : bitvector), 
+  ule_list_big_endian x y = true -> ule_list_big_endian (x ++ z) (y ++ z) = true.
+Proof.
+  induction z.
+  + rewrite app_nil_r. rewrite app_nil_r. easy.
+  + intros. unfold ule_list_big_endian in *.
+Admitted.
+
+Lemma ule_list_big_endian_rev_app : forall (x y z : bitvector), 
+      ule_list_big_endian (rev x) (rev y) = true -> 
+      ule_list_big_endian (rev (z ++ x)) (rev (z ++ y)) = true.
+Proof.
+  intros x y z ule_rx_ry. rewrite rev_app_distr. rewrite rev_app_distr.
+  apply ule_list_big_endian_app. apply ule_rx_ry.
 Qed.
 
 Lemma bv_uleP_pre_append : forall (x y z : bitvector), bv_uleP x y ->
@@ -4198,6 +4228,15 @@ Admitted.
 
 
 (* x << s <= 1 << s *)
+
+Lemma blah : forall m n : nat, (S m < n)%nat -> (n - (S m) < n)%nat.
+Proof.
+  induction n.
+  + easy. 
+  + intros. apply lt_S_n in H. rewrite Nat.sub_succ. 
+    induction m.
+    - rewrite Nat.sub_0_r. apply Nat.lt_succ_diag_r.
+    - Admitted.
 
 Lemma bv_shl_n_bits_a_1_leq : forall (n : N) (x s : bitvector),
   size x = n -> size s = n -> bv_uleP (shl_n_bits_a x (list2nat_be_a s))
@@ -4235,9 +4274,9 @@ Proof.
       specialize (@bv_uleP_pre_append (firstn (length x - S n0) x)
       (firstn (length x - S n0) (mk_list_true (length x))) (mk_list_false (S n0))).
       apply bv_uleP_pre_append. apply bv_uleP_1_firstn.
-      assert (forall m n : nat, (m < n)%nat -> (n - m < n)%nat ). 
+      assert (forall m n : nat, (S m < n)%nat -> (n - (S m) < n)%nat). 
       { admit. }
-      specialize (@H2 (S n0) (length x) H0). apply H2.
+      specialize (@H2 n0 (length x) H0). apply H2.
   + intros. apply bv_ule_refl.
 Admitted. 
 
