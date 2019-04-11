@@ -567,7 +567,7 @@ Proof.
     - apply bv_not_size. rewrite (zeros_size (size s)). 
       apply  Hs. 
     - apply bv_ultP_bv_ugtP. apply H.
-Admitted.
+Qed.
 
 (* (exists x, (s << x) >u t) <=> 
    (exists i, 0 <= i < size(s), (s << i) >u t) *)
