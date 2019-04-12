@@ -5460,84 +5460,13 @@ Qed.
 Lemma list_lt_true: forall s,
   (N.to_nat (list2N (mk_list_true (length s)) 0) <?
    N.to_nat (list2N s 0))%nat = false.
-Proof. intro s.
-        induction s; intros.
-        - easy.
-        - case_eq a; intros.
-          + case_eq (N.to_nat (N.succ_double (list2N s 0))); intros.
-            cbn in *. contradict H0.
-            Reconstr.reasy (@Coq.NArith.Nnat.N2Nat.inj_succ_double) Reconstr.Empty.
-            hammer.
-            easy. inversion H0.
-            hammer.
-
- case_eq s; intros.
-          + subst. cbn in *. case_eq a; intros.
-            cbn. 
-            Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.inj_1) (@Coq.Init.Nat.leb).
-            now cbn.
-          + rewrite <- H0.
-            assert (s <> nil) by Reconstr.reasy Reconstr.Empty Reconstr.Empty.
-            specialize (IHs H1).
-            case_eq a; intros. cbn.
-            * case_eq (N.to_nat (N.succ_double (list2N s 0))); intros.
-              ++ easy.
-              ++ subst. cbn in *.
-
- rewrite <- IHs. unfold N.succ_double lia.
-              
- cbn.
+Proof. Admitted.
 
 Lemma list_skip_app_lt: forall n s t, (n <? length s)%nat = true ->
   (length t =? length s = true)%nat ->
   (N.to_nat (list2N (skipn n s ++ mk_list_true n) 0) <?
   (N.to_nat (list2N t 0)))%nat = true.
-Proof. intro n.
-        induction n; intros.
-        - cbn in *. case_eq s; intros.
-          + subst. now cbn in *.
-          + subst. cbn in *. case_eq t; intros.
-            * subst. now cbn in *.
-            * subst. cbn in *.
-
- easy.
-        - cbn. case_eq t; intros.
-          + subst. now cbn in *.
-          + subst. case_eq n; intros.
-            * subst. cbn.
-              specialize (IHs l 0%nat).
-
- cbn. 
-
- case_eq b; intros. admit.
-            case_eq (N.to_nat (N.double (list2N l 0))); intros.
-            * assert (N.to_nat (list2N l 0) = 0%nat) by admit.
-              specialize (IHs l (n - 1)%nat). rewrite H3 in IHs.
-              assert ((n - 1 <? length s)%nat = true). cbn in H. admit.
-              assert ( (length l =? length s)%nat = true) by
-              Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.length, @Coq.Init.Nat.eqb).
-              specialize (IHs H4 H5). contradict IHs.
-              easy.
-            * case_eq n; intros. cbn.
-
- specialize (IHs l (n - 1)%nat). cbn in H.
-              assert ((n - 1 <? length s)%nat = true). cbn in H. admit.
-              assert ( (length l =? length s)%nat = true) by
-              Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.length, @Coq.Init.Nat.eqb).
-              specialize (IHs H3 H4).
-              
- contradict IHs.
-
- rewrite H3 in IHs.
-              assert ((n - 1 <? length s)%nat = true). cbn in H. admit.
-
-
- case_eq n; intros.
-              -- subst. cbn.
-            case_eq (N.to_nat (if b then N.succ_double (list2N l 0) 
-                     else N.double (list2N l 0))); intros.
-            
-
+Proof. Admitted.
 
 
 End RAWBITVECTOR_LIST.
