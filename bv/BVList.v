@@ -5474,6 +5474,7 @@ Proof. intro n.
         - cbn. case_eq s; intros; easy.
 Qed.
 
+
 Lemma list_cases_all_true: forall l, 
   l = mk_list_true (length l) \/ l <> mk_list_true (length l).
 Proof. induction l; intros.
@@ -5770,7 +5771,6 @@ Proof. intro t.
             specialize (IHt (Nat.div a0 2 ) H1).
             Reconstr.reasy Reconstr.Empty Reconstr.Empty.
 Qed.
-
 
 End RAWBITVECTOR_LIST.
 
