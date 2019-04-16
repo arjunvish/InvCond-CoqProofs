@@ -1127,6 +1127,23 @@ Proof.
            now inversion H2.
 Qed.
 
+Lemma List_neq2: forall (l m: list bool), l <> m -> beq_list l m = false.
+Proof. intro l.
+        induction l; intros.
+        - Reconstr.reasy Reconstr.Empty (@RAWBITVECTOR_LIST.beq_list).
+        - case_eq m; intros.
+          + subst. easy.
+          + subst. cbn.
+            specialize (IHl l0).
+            case_eq a; case_eq b; intros.
+            * cbn. apply IHl.
+              Reconstr.reasy Reconstr.Empty Reconstr.Empty.
+            * now cbn.
+            * now cbn.
+            * cbn. apply IHl.
+              Reconstr.reasy Reconstr.Empty Reconstr.Empty.
+Qed.
+
 Lemma List_neqP : forall (l m: list bool), ~beq_listP l m -> l <> m.
 Proof. 
        intro l.
@@ -5457,87 +5474,302 @@ Proof. intro n.
         - cbn. case_eq s; intros; easy.
 Qed.
 
-Lemma list_lt_true: forall s,
-  (N.to_nat (list2N (mk_list_true (length s)) 0) <?
-   N.to_nat (list2N s 0))%nat = false.
-Proof. intro s.
-        induction s; intros.
-        - easy.
-        - case_eq a; intros.
-          + case_eq (N.to_nat (N.succ_double (list2N s 0))); intros.
-            cbn in *. contradict H0.
-            Reconstr.reasy (@Coq.NArith.Nnat.N2Nat.inj_succ_double) Reconstr.Empty.
-            hammer.
-            easy. inversion H0.
-            hammer.
+Lemma list_cases_all_true: forall l, 
+  l = mk_list_true (length l) \/ l <> mk_list_true (length l).
+Proof. induction l; intros.
+        - now left.
+        - cbn. destruct IHl as [IHl | IHl].
+          + case_eq a; intros.
+            left. now rewrite IHl at 1.
+            now right.
+          + case_eq a; intros.
+            right. Reconstr.reasy Reconstr.Empty Reconstr.Empty.
+            right. easy.
+Qed.
 
- case_eq s; intros.
-          + subst. cbn in *. case_eq a; intros.
-            cbn. 
-            Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.inj_1) (@Coq.Init.Nat.leb).
-            now cbn.
-          + rewrite <- H0.
-            assert (s <> nil) by Reconstr.reasy Reconstr.Empty Reconstr.Empty.
-            specialize (IHs H1).
-            case_eq a; intros. cbn.
-            * case_eq (N.to_nat (N.succ_double (list2N s 0))); intros.
-              ++ easy.
-              ++ subst. cbn in *.
+Lemma n_cases_all: forall n, n = O \/ n <> O.
+Proof. intro n.
+        case_eq n; intros; [ now left | now right ].
+Qed.
 
- rewrite <- IHs. unfold N.succ_double lia.
-              
- cbn.
+Lemma skipn_same_mktr: forall n, 
+skipn n (mk_list_true n) ++ mk_list_true n = mk_list_true n.
+Proof. induction n; intros.
+        - now cbn.
+        - cbn in *.
+          assert (true :: mk_list_true n = mk_list_true n ++ [true]).
+	        Reconstr.reasy (@RAWBITVECTOR_LIST.mk_list_true_succ, 
+            @RAWBITVECTOR_LIST.mk_list_true_app) Reconstr.Empty.
+          now rewrite H, app_assoc, IHn.
+Qed.
 
-Lemma list_skip_app_lt: forall n s t, (n <? length s)%nat = true ->
-  (length t =? length s = true)%nat ->
-  (N.to_nat (list2N (skipn n s ++ mk_list_true n) 0) <?
-  (N.to_nat (list2N t 0)))%nat = true.
+Lemma skipn_gt_false: forall n,
+(N.to_nat (list2N (mk_list_true n) 0) <? 
+ N.to_nat (list2N (skipn n (mk_list_true n) ++ mk_list_true n) 0))%nat = false.
+Proof. intros. rewrite skipn_same_mktr.
+        Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.ltb_irrefl) 
+          Reconstr.Empty.
+Qed.
+
+Lemma true_val_list: forall l,
+(N.to_nat (list2N (true :: l) 0) = (N.to_nat (N.succ_double (list2N l 0))))%nat.
+Proof. induction l; intros; now cbn. Qed.
+
+Lemma false_val_list: forall l,
+(N.to_nat (list2N (false :: l) 0) = (N.to_nat (N.double (list2N l 0))))%nat.
+Proof. induction l; intros; now cbn. Qed.
+
+
+Lemma skipn_nil: forall {A: Type} n, @skipn A n nil = nil.
+Proof. intros.
+        induction n; intros; now cbn.
+Qed.
+
+Lemma skip0: forall {A: Type} l, @skipn A 0 l = l.
+Proof. intros. 
+        induction l; intros; now cbn.
+Qed.
+
+Lemma skipn_true_list: forall n l,
+  (skipn n l ++ true :: mk_list_true n) = (skipn n l ++ mk_list_true n) ++ [true].
 Proof. intro n.
         induction n; intros.
-        - cbn in *. case_eq s; intros.
-          + subst. now cbn in *.
-          + subst. cbn in *. case_eq t; intros.
-            * subst. now cbn in *.
-            * subst. cbn in *.
+        - cbn. Reconstr.reasy (@Coq.Lists.List.app_nil_end) Reconstr.Empty.
+        - cbn. case_eq l; intros.
+          + cbn. Reconstr.reasy (@RAWBITVECTOR_LIST.mk_list_true_succ,
+                  @RAWBITVECTOR_LIST.mk_list_true_app) Reconstr.Empty.
+          + Reconstr.reasy (@RAWBITVECTOR_LIST.mk_list_true_app, 
+              @RAWBITVECTOR_LIST.mk_list_true_succ, 
+              @Coq.Lists.List.app_comm_cons, 
+              @Coq.Lists.List.app_assoc) Reconstr.Empty.
+Qed.
 
- easy.
-        - cbn. case_eq t; intros.
-          + subst. now cbn in *.
-          + subst. case_eq n; intros.
-            * subst. cbn.
-              specialize (IHs l 0%nat).
+Lemma skipn_true_val_list: forall n l,
+(n <? length l)%nat = true ->
+(N.to_nat (list2N (skipn n l ++ true :: mk_list_true n) 0) = 
+ N.to_nat (list2N (skipn n l ++ mk_list_true n) 0) + Nat.pow 2 (length l))%nat.
+Proof. intros. rewrite skipn_true_list, list2N_app_true.
+        rewrite app_length, length_skipn, length_mk_list_true.
+	      Reconstr.rcrush (@Coq.Arith.PeanoNat.Nat.sub_add, 
+          @Coq.Arith.PeanoNat.Nat.ltb_lt, 
+          @Coq.Arith.PeanoNat.Nat.lt_le_incl) Reconstr.Empty.
+Qed.
 
- cbn. 
+Lemma pow_eqb_1: forall n,
+((S (N.to_nat (list2N (mk_list_true n) 0)))%nat =? (2 ^ n))%nat = true.
+Proof. intros.
+        induction n; intros.
+        - now cbn.
+        - cbn in *.
+          case_eq ((2 ^ n)%nat); intros.
+          + rewrite H in *. easy.
+          + rewrite H in *. cbn.
+            rewrite N2Nat.inj_succ_double.
+            apply Nat.eqb_eq in IHn.
+            rewrite IHn.
+            apply Nat.eqb_eq. 
+	          Reconstr.rcrush (@Coq.Arith.PeanoNat.Nat.add_succ_r, 
+              @Coq.Arith.PeanoNat.Nat.mul_1_l,
+              @Coq.Arith.PeanoNat.Nat.add_0_r,
+              @Coq.Arith.PeanoNat.Nat.mul_succ_l, 
+              @Coq.PArith.Pnat.Pos2Nat.inj_1) Reconstr.Empty.
+Qed.
 
- case_eq b; intros. admit.
-            case_eq (N.to_nat (N.double (list2N l 0))); intros.
-            * assert (N.to_nat (list2N l 0) = 0%nat) by admit.
-              specialize (IHs l (n - 1)%nat). rewrite H3 in IHs.
-              assert ((n - 1 <? length s)%nat = true). cbn in H. admit.
-              assert ( (length l =? length s)%nat = true) by
-              Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.length, @Coq.Init.Nat.eqb).
-              specialize (IHs H4 H5). contradict IHs.
-              easy.
-            * case_eq n; intros. cbn.
+Lemma pow_eqb_0: forall n,
+(((N.to_nat (list2N (mk_list_true n) 0)))%nat = (2 ^ n) - 1)%nat.
+Proof. intros. specialize (pow_eqb_1 n); intros.
+        rewrite Nat.eqb_eq in H. rewrite <- H.
+        cbn. lia.
+Qed.
 
- specialize (IHs l (n - 1)%nat). cbn in H.
-              assert ((n - 1 <? length s)%nat = true). cbn in H. admit.
-              assert ( (length l =? length s)%nat = true) by
-              Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.length, @Coq.Init.Nat.eqb).
-              specialize (IHs H3 H4).
-              
- contradict IHs.
+Lemma pow_gtb_1: forall l,
+l <> mk_list_true (length l) ->
+((S (N.to_nat (list2N l 0))) <? 2 ^ length l = true)%nat.
+Proof. intro l.
+        induction l; intros.
+        - cbn in *. easy.
+        - case_eq a; intros.
+          + assert ( l <> mk_list_true (length l)).
+            subst. cbn in H.
+            Reconstr.reasy Reconstr.Empty Reconstr.Empty.
+            specialize (IHl H1).
+            rewrite true_val_list.
+            rewrite N2Nat.inj_succ_double.
+            apply Nat.ltb_lt.
+            apply Nat.ltb_lt in IHl.
+            cbn. lia.
+          + destruct (list_cases_all_true l).
+            * rewrite H1.
+              specialize (pow_eqb_1 (length l)); intros.
+              rewrite !false_val_list.
+              rewrite !N2Nat.inj_double. 
+              assert (length (false :: mk_list_true (length l)) = 
+                      S (length l)).
+              Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.add_0_l)
+               (@Coq.Init.Datatypes.length, 
+                @RAWBITVECTOR_LIST.mk_list_true).
+              rewrite H3.
+              apply Nat.eqb_eq in H2.
+              Reconstr.reasy (@RAWBITVECTOR_LIST.length_mk_list_true, 
+                 @Coq.NArith.Nnat.N2Nat.inj_succ_double,
+                 @RAWBITVECTOR_LIST.true_val_list,
+                 @RAWBITVECTOR_LIST.pow_gt,
+                 @RAWBITVECTOR_LIST.mk_list_true_cons) Reconstr.Empty.
+            * rewrite !false_val_list.
+              rewrite !N2Nat.inj_double.
+              assert (length (false :: l) = 
+                      S (length l)).
+              Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.length).
+              rewrite H2.
+              specialize (IHl H1).
+              apply Nat.ltb_lt.
+              apply Nat.ltb_lt in IHl. 
+              cbn. lia.
+Qed.
 
- rewrite H3 in IHs.
-              assert ((n - 1 <? length s)%nat = true). cbn in H. admit.
+Lemma skipn_nm: forall n m,
+(n <? m)%nat = true ->
+(skipn n (mk_list_true m) ++ mk_list_true n) = (mk_list_true m).
+Proof. intro n.
+        induction n; intros.
+        - cbn. now rewrite app_nil_r.
+        - cbn. case_eq m; intros.
+          + subst. easy. 
+          + cbn. rewrite <- IHn at 2.
+          	Reconstr.rcrush (@Coq.PArith.Pnat.Pos2Nat.inj_1,
+               @RAWBITVECTOR_LIST.ltb_plus, 
+               @RAWBITVECTOR_LIST.mk_list_true_app, 
+               @RAWBITVECTOR_LIST.mk_list_true_succ, 
+               @RAWBITVECTOR_LIST.skipn_true_list, 
+               @Coq.Arith.PeanoNat.Nat.add_1_r) Reconstr.Empty.
+            Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.ltb_irrefl)
+              (@Coq.Init.Nat.leb, @Coq.Init.Nat.ltb).
+Qed.
 
+Lemma skipn_gt: forall n s,
+(n <> 0)%nat ->
+(n <? length s)%nat = true ->
+s <> mk_list_true (length s) ->
+(N.to_nat (list2N s 0) <? 
+ N.to_nat (list2N (skipn n s ++ mk_list_true n) 0))%nat = true.
+Proof. intro n.
+        induction n as [ | n IHn ]; intros.
+        - simpl in *. easy.
+        - simpl in *.
+          case_eq s; intros.
+          + subst. easy.
+          + rewrite skipn_true_val_list.
+            specialize (IHn l).
+            case_eq b; intros.
+            subst. rewrite true_val_list.
+            rewrite N2Nat.inj_succ_double.
 
- case_eq n; intros.
-              -- subst. cbn.
-            case_eq (N.to_nat (if b then N.succ_double (list2N l 0) 
-                     else N.double (list2N l 0))); intros.
-            
+            destruct (n_cases_all n).
+            rewrite H2. rewrite skip0.
+            assert (mk_list_true 0 = nil) by easy.
+            rewrite H3, app_nil_r.
+            specialize (pow_gt l); intros.
 
+            apply Nat.ltb_lt.
+            apply Nat.ltb_lt in H4. cbn.
+            specialize (@pow_gtb_1 l); intros.
+            assert (l <> mk_list_true (length l)).
+            cbn in H1.
+            Reconstr.reasy Reconstr.Empty Reconstr.Empty.
+            specialize (H5 H6). rewrite <- plus_n_O.
+            apply Nat.ltb_lt in H5.
+            cbn. lia.
+
+            assert (l <> mk_list_true (length l)).
+            cbn in H1.
+            Reconstr.reasy Reconstr.Empty Reconstr.Empty.
+            assert ((n <? length l)%nat = true).
+            cbn in H0.
+         	  Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.lt_succ_r,
+              @Coq.Arith.PeanoNat.Nat.ltb_lt,
+              @Coq.Arith.PeanoNat.Nat.leb_le) Reconstr.Empty.
+            specialize (IHn H2 H4 H3).
+            specialize (pow_gt l); intros.
+            apply Nat.ltb_lt.
+            apply Nat.ltb_lt in IHn.
+            apply Nat.ltb_lt in H5.
+            cbn. lia.
+
+            destruct (list_cases_all_true l).
+            rewrite false_val_list.
+            rewrite H4.
+            rewrite N2Nat.inj_double.
+            apply Nat.ltb_lt. rewrite skipn_nm.
+            Reconstr.rexhaustive1 (@Coq.NArith.Nnat.N2Nat.inj_succ_double,
+              @RAWBITVECTOR_LIST.list2N_app_true, 
+              @RAWBITVECTOR_LIST.mk_list_true_app,
+              @RAWBITVECTOR_LIST.mk_list_true_cons, 
+              @RAWBITVECTOR_LIST.true_val_list, @Coq.Init.Peano.le_n) 
+            (@Coq.Init.Peano.lt, @Coq.Init.Datatypes.length).
+            simpl in H0.
+            Reconstr.reasy (@RAWBITVECTOR_LIST.length_mk_list_true) 
+              (@Coq.Init.Datatypes.length,
+               @Coq.Init.Nat.leb, @RAWBITVECTOR_LIST.mk_list_true, 
+               @Coq.Init.Nat.ltb).
+            destruct (n_cases_all n).
+            subst.
+            rewrite false_val_list.
+            rewrite N2Nat.inj_double.
+            rewrite skip0.
+            assert (mk_list_true 0 = nil) by easy.
+            rewrite H2, app_nil_r.
+            specialize (pow_gt l); intros.
+            apply Nat.ltb_lt.
+            apply Nat.ltb_lt in H3.
+            cbn. lia.
+            rewrite false_val_list.
+            assert ((n <? length l)%nat = true).
+            subst. cbn in H0. 
+	          Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.leb_le, 
+              @Coq.Arith.PeanoNat.Nat.lt_succ_r,
+              @Coq.Arith.PeanoNat.Nat.ltb_lt) Reconstr.Empty.
+            specialize (IHn H5 H6 H4).
+            specialize (pow_gt l); intros.
+            apply Nat.ltb_lt.
+            apply Nat.ltb_lt in IHn.
+            apply Nat.ltb_lt in H7.
+            rewrite N2Nat.inj_double.
+            cbn. lia.
+
+            subst. cbn in *. 
+            easy.
+Qed.
+
+Lemma pow_ltb: forall l,
+l <> mk_list_true (length l) ->
+(N.to_nat (list2N l 0) <? 
+ N.to_nat (list2N (mk_list_true (length l)) 0) = true)%nat.
+Proof. intros. rewrite pow_eqb_0.
+        specialize (@pow_gtb_1 l H); intros.
+        apply Nat.ltb_lt.
+        apply Nat.ltb_lt in H0. lia.
+Qed.
+
+Lemma  bv2nat_gt0: forall t a, (a <? bv2nat_a t)%nat = true -> 
+t <> mk_list_false (length t).
+Proof. intro t.
+        induction t; intros.
+        - cbn in *. easy.
+        - unfold bv2nat_a, list2nat_be_a in *.
+          cbn.
+          case_eq a; intros.
+          + easy.
+          + rewrite H0 in *.
+            rewrite false_val_list in H.
+            rewrite N2Nat.inj_double in H.
+            assert ((Nat.div a0 2 <? N.to_nat (list2N t 0))%nat = true).
+            apply Nat.ltb_lt.
+            apply Nat.ltb_lt in H.
+            Reconstr.rexhaustive1 (@Coq.Arith.PeanoNat.Nat.div_lt_upper_bound,
+             @Coq.PArith.Pnat.Pos2Nat.inj_1) Reconstr.Empty.
+            specialize (IHt (Nat.div a0 2 ) H1).
+            Reconstr.reasy Reconstr.Empty Reconstr.Empty.
+Qed.
 
 
 End RAWBITVECTOR_LIST.

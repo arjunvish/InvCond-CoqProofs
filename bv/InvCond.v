@@ -580,16 +580,6 @@ Proof.
 Admitted.
 (*------------------------------------------------------------*)
 
-
-(* 
-           specialize (@length_ashr_aux_a x s (N.to_nat n)); intro Haux.
-           rewrite <- Haux, N2Nat.id, N.eqb_refl.
-           rewrite length_shl_n_bits_a.
-           rewrite <- Haux, N2Nat.id, N.eqb_refl.
-           unfold ashr_aux_a. *)
-
-
-
 (*------------------------------Arithmetic right shift------------------------------*)
 (* (exists x, x >>a s = t) 
       <=> 
@@ -811,9 +801,23 @@ Proof. intros. split.
             rewrite Nat2N.id.
             Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.eqb_eq) 
               (@BV.BVList.RAWBITVECTOR_LIST.bitvector).
-          + rewrite H4 in H2. 
+          + rewrite H4 in H2.
             unfold bv2nat_a, list2nat_be_a, zeros, size in *.
-            rewrite Nat2N.id in *. left. admit.
+            rewrite Nat2N.id in *. left.
+            destruct (n_cases_all (N.to_nat (list2N x 0))).
+            * rewrite H5 in *.
+              rewrite skip0 in H2.
+              assert (mk_list_true 0 = nil) by easy.
+              now rewrite H6, app_nil_r in H2.
+            * destruct (list_cases_all_true s).
+              ** rewrite H6 in H2.
+                 rewrite skipn_nm in H2; [ | easy].
+                 now rewrite H6.
+              ** specialize (@skipn_gt (N.to_nat (list2N x 0)) s H5 H3 H6); intros.
+                 apply Nat.ltb_lt.
+                 apply Nat.ltb_lt in H2.
+                 apply Nat.ltb_lt in H7.
+                 lia.
         - rewrite H3 in H2.
           case_eq (eqb (last s false) false); intros.
           + rewrite H4 in H2.
@@ -830,19 +834,56 @@ Proof. intros. split.
             Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.eqb_eq) 
               (@BV.BVList.RAWBITVECTOR_LIST.bitvector).
           + rewrite H4 in H2. unfold bv_slt, slt_list.
-            contradict H2.
-            unfold bv2nat_a, list2nat_be_a, size.
-            case_eq s; intros.
-            subst. cbn. assert (t = nil) by
-            Reconstr.reasy Reconstr.Empty (@Coq.Lists.List.last, @Coq.Bool.Bool.eqb).
-            subst. now cbn.
-            rewrite <- H2 in *. admit. 
-        -  admit.
+            unfold bv2nat_a, list2nat_be_a, size in *.
+            left.
+            destruct (list_cases_all_true s).
+            * now rewrite H5.
+            * specialize (@pow_ltb s H5); intros.
+              apply Nat.ltb_lt.
+              apply Nat.ltb_lt in H2.
+              apply Nat.ltb_lt in H6. 
+              lia.
+        - unfold bv_ashr_a. 
+          rewrite H, H1, N.eqb_refl.
+          specialize (@length_ashr_aux_a s x (N.to_nat n)); intros.
+          rewrite <- H3. 
+          Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.of_bits_size, 
+           @BV.BVList.BITVECTOR_LIST.of_bits_size, 
+           @Coq.Arith.PeanoNat.Nat.eqb_eq) 
+          (@BV.BVList.RAWBITVECTOR_LIST.size,
+           @BV.BVList.RAWBITVECTOR_LIST.bitvector).
+           Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.of_bits_size, 
+              @BV.BVList.BITVECTOR_LIST.of_bits_size) 
+             (@BV.BVList.RAWBITVECTOR_LIST.bitvector, 
+              @BV.BVList.RAWBITVECTOR_LIST.size).
+           Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.of_bits_size, 
+              @BV.BVList.BITVECTOR_LIST.of_bits_size) 
+             (@BV.BVList.RAWBITVECTOR_LIST.bitvector, 
+              @BV.BVList.RAWBITVECTOR_LIST.size).
         - Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.of_bits_size,
             @BV.BVList.BITVECTOR_LIST.of_bits_size, @Coq.Arith.PeanoNat.Nat.eqb_eq) 
             (@BV.BVList.RAWBITVECTOR_LIST.size, @BV.BVList.RAWBITVECTOR_LIST.bitvector).
-        - admit.
-Admitted.
+        - destruct H1 as (x, (H1, H2)).
+          unfold bv_eq. rewrite H0. unfold zeros, size.
+          rewrite length_mk_list_false, N2Nat.id, N.eqb_refl.
+          unfold bits.
+          rewrite bv_ult_nat in *.
+          unfold bv_ashr_a in *.
+          rewrite H, H1, N.eqb_refl in H2.
+          specialize (@bv2nat_gt0 t (bv2nat_a (ashr_aux_a s x)) H2); intros.
+          rewrite <- H0. unfold size.
+          rewrite Nat2N.id.
+          now apply List_neq2 in H3.
+          unfold bv_ashr_a.
+          rewrite H, H1, N.eqb_refl. 
+          specialize (@length_ashr_aux_a s x (N.to_nat n)); intros.
+	        Reconstr.rsimple (@BV.BVList.RAWBITVECTOR_LIST.length_ashr_aux_a,
+            @BV.BVList.RAWBITVECTOR_LIST.of_bits_size, 
+            @BV.BVList.BITVECTOR_LIST.of_bits_size,
+            @Coq.Arith.PeanoNat.Nat.eqb_eq)
+           (@BV.BVList.RAWBITVECTOR_LIST.bitvector, 
+            @BV.BVList.RAWBITVECTOR_LIST.size).
+Qed.
 
 (* (exists x, (s >>a s) <u t) <=> ((s <u t \/ s >=s 0) /\ t != 0) *)
 Theorem bvashr_ult2 : forall (n : N), forall (s t : bitvector),
