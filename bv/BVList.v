@@ -3847,20 +3847,20 @@ length (pos2list p []) = Pos.to_nat (Pos.size p).
 Proof. intro p.
        induction p; intros.
        - cbn. rewrite length_pos2list_acc.
-         cbn. rewrite IHp. admit.
-(*          Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.inj_succ) Reconstr.Empty. *)
-       - cbn. rewrite length_pos2list_acc. cbn. rewrite IHp. admit.
-(*          Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.inj_succ) Reconstr.Empty. *)
+         cbn. rewrite IHp.
+         Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.inj_succ) Reconstr.Empty.
+       - cbn. rewrite length_pos2list_acc. cbn. rewrite IHp.
+         Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.inj_succ) Reconstr.Empty.
        - now cbn.
-Admitted.
+Qed.
 
 Lemma length_pos2list: forall p a, 
   (length (pos2list p a)) = (length a  + N.to_nat (N.size (Npos p)))%nat.
 Proof. intros.  
        rewrite pos2list_acc, app_length.
-       f_equal. rewrite length_pos2list_nil. admit.
-(* 	     Reconstr.reasy (@Coq.ZArith.Znat.positive_N_nat) (@Coq.NArith.BinNatDef.N.size). *)
-Admitted.
+       f_equal. rewrite length_pos2list_nil.
+       Reconstr.reasy (@Coq.ZArith.Znat.positive_N_nat) (@Coq.NArith.BinNatDef.N.size).
+Qed.
 
 Definition N2list (n: N) s :=
   match n with 
@@ -3874,20 +3874,18 @@ Proof. intro n.
        induction n; intros.
        - cbn. now rewrite length_mk_list_false.
        - cbn. case_eq (Pos.to_nat (Pos.size p)); intros.
-         + contradict H. admit.
-(*          	Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.is_pos, 
-            @Coq.Arith.PeanoNat.Nat.neq_0_lt_0) Reconstr.Empty.      *) 
+         + contradict H.
+          	Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.is_pos, 
+            @Coq.Arith.PeanoNat.Nat.neq_0_lt_0) Reconstr.Empty. 
          + case_eq ( (s <=? n)%nat); intros.
            * rewrite firstn_length. rewrite length_pos2list_nil, H.
-             admit.
-(*             	Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.lt_eq_cases, @Coq.Arith.PeanoNat.Nat.min_l,
+            	Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.lt_eq_cases, @Coq.Arith.PeanoNat.Nat.min_l,
                @Coq.Arith.PeanoNat.Nat.leb_le, @Coq.Arith.PeanoNat.Nat.succ_le_mono)
-              (@Coq.Init.Nat.min, @Coq.Init.Peano.lt). *)
+              (@Coq.Init.Nat.min, @Coq.Init.Peano.lt).
            * rewrite app_length, length_pos2list_nil, H, length_mk_list_false.
-             admit.
-(*              	Reconstr.reasy (@Coq.Arith.Minus.le_plus_minus,
-                @Coq.Arith.Compare_dec.leb_complete_conv) (@Coq.Init.Peano.lt). *)
-Admitted.
+            	Reconstr.reasy (@Coq.Arith.Minus.le_plus_minus,
+                @Coq.Arith.Compare_dec.leb_complete_conv) (@Coq.Init.Peano.lt).
+Qed.
 
 Definition nat2bv (n: nat) s := N2list (N.of_nat n) s.
 
@@ -3903,14 +3901,14 @@ Proof. intro n.
        induction n; intros.
        - cbn. rewrite Pos2Nat.inj_1. assert ((m - 0)%nat = m) by lia. now rewrite H.
        - cbn. case_eq (Pos.to_nat (Pos.size p)); intros.
-         + cbn. contradict H. admit.
-(* 	         Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.neq_0_lt_0,
-             @Coq.PArith.Pnat.Pos2Nat.is_pos) Reconstr.Empty. *)
+         + cbn. contradict H.
+  	         Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.neq_0_lt_0,
+             @Coq.PArith.Pnat.Pos2Nat.is_pos) Reconstr.Empty.
          + assert ((Pos.to_nat (Pos.succ (Pos.size p))%nat = S (S n))).
-           { admit. (*	Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.inj_succ) Reconstr.Empty. *) }
+           { Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.inj_succ) Reconstr.Empty. }
            rewrite H0.
            case_eq (m <=? n)%nat; intros; rewrite pos2list_acc; now cbn.
-Admitted.
+Qed.
 
 Lemma N2list_S_false: forall n m,
 N2list (N.double n) (S m) = false :: N2list n m.
@@ -3918,14 +3916,14 @@ Proof. intro n.
        induction n; intros.
        - now cbn.
        - cbn. case_eq (Pos.to_nat (Pos.size p)); intros.
-         + cbn. contradict H. admit.
-(* 	         Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.neq_0_lt_0,
-             @Coq.PArith.Pnat.Pos2Nat.is_pos) Reconstr.Empty. *)
+         + cbn. contradict H.
+  	         Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.neq_0_lt_0,
+             @Coq.PArith.Pnat.Pos2Nat.is_pos) Reconstr.Empty.
          + assert ((Pos.to_nat (Pos.succ (Pos.size p))%nat = S (S n))).
-           { admit. (*	Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.inj_succ) Reconstr.Empty. *) }
+           { Reconstr.reasy (@Coq.PArith.Pnat.Pos2Nat.inj_succ) Reconstr.Empty. }
            rewrite H0.
            case_eq (m <=? n)%nat; intros; rewrite pos2list_acc; now cbn.
-Admitted.
+Qed.
 
 Lemma N2List_list2N: forall a, N2list (list2N a 0) (length a) = a.
 Proof. intro a. 
@@ -5012,18 +5010,20 @@ shl_one_bit (mk_list_false (length a)) = mk_list_false (length a).
 Proof. intro a.
        induction a; intros.
        - now cbn.
-       - 
-(*          cbn in *. hammer. Reconstr.reasy Reconstr.Empty Reconstr.Empty. *)
-Admitted.
+       - Reconstr.rblast (@RAWBITVECTOR_LIST.mk_list_false_cons, 
+           @RAWBITVECTOR_LIST.shl_one_b, 
+           @Coq.Lists.List.length_zero_iff_nil) 
+          (@Coq.Init.Datatypes.length,
+           @RAWBITVECTOR_LIST.mk_list_false).
+Qed.
 
 Lemma firstn_neq_nil: forall n (a: list bool),
 a <> nil -> (n%nat <> 0%nat) -> firstn n a <> [].
 Proof. intro n.
        induction n; intros.
        - cbn in *. easy.
-       - admit.
-(*        - Reconstr.reasy Reconstr.Empty (@Coq.Lists.List.firstn). *)
-Admitted.
+       - Reconstr.reasy Reconstr.Empty (@Coq.Lists.List.firstn).
+Qed.
 
 Theorem bv_shl_aux_eq: forall n a, shl_n_bits a n = shl_n_bits_a a n.
 Proof. intro n.
@@ -5046,21 +5046,18 @@ Proof. intro n.
          { unfold m in *.
            case_eq n; intros. cbn. now rewrite Nat.sub_0_r.
            cbn.
-(*            Reconstr.rcrush (@Coq.Arith.PeanoNat.Nat.ltb_lt,
+           Reconstr.rcrush (@Coq.Arith.PeanoNat.Nat.ltb_lt,
            @Coq.Arith.PeanoNat.Nat.sub_succ, @Coq.Init.Peano.le_S_n,
-           @Coq.Arith.Minus.minus_Sn_m) (@Coq.Init.Peano.lt, @Coq.Init.Datatypes.length). *)
-           admit.
+           @Coq.Arith.Minus.minus_Sn_m) (@Coq.Init.Peano.lt, @Coq.Init.Datatypes.length).
          }
          rewrite H2, removelast_firstn. easy.
          unfold m.
-(*          Reconstr.rexhaustive1 (@Coq.Arith.PeanoNat.Nat.le_sub_l) (@Coq.Init.Peano.lt, @m). *)
-         admit.
+         Reconstr.rexhaustive1 (@Coq.Arith.PeanoNat.Nat.le_sub_l) (@Coq.Init.Peano.lt, @m).
          cbn. case_eq n; intros. subst; cbn in *. easy.
          subst. apply Nat.ltb_lt in H. apply Nat.ltb_lt in H0.
          apply firstn_neq_nil. easy.
-(*          Reconstr.rcrush (@Coq.Arith.PeanoNat.Nat.sub_gt,
-           @Coq.Arith.PeanoNat.Nat.sub_succ) (@Coq.Init.Datatypes.length). *)
-         admit.
+         Reconstr.rcrush (@Coq.Arith.PeanoNat.Nat.sub_gt,
+           @Coq.Arith.PeanoNat.Nat.sub_succ) (@Coq.Init.Datatypes.length).
          case_eq ((n <? length a)%nat); intros.
          assert (length a = S n).
          { apply Nat.ltb_lt in H0.
@@ -5071,11 +5068,10 @@ Proof. intro n.
          assert ((S n - n)%nat = 1%nat) by lia.
          rewrite H2, removelast_one, app_nil_r. easy.
          apply firstn_neq_nil.
-         admit.
-(*          Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.length). *)
+         Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.length).
          lia.
          now rewrite shl_one_bit_all_false.
-Admitted.
+Qed.
 
 Lemma ult_list_be_cons_false: forall a b c,
 length a = length b ->
@@ -5087,25 +5083,24 @@ Proof. intro a.
          subst. cbn.
          case_eq a0; intros.
          subst. assert (l = nil) .
-         admit.
-(*          { 	Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.length). } *)
-         subst.  cbn in *. admit.
-(*          Reconstr.rsimple Reconstr.Empty (@Coq.Init.Datatypes.negb, 
-           @Coq.Init.Datatypes.orb, @Coq.Init.Datatypes.andb, @Coq.Bool.Bool.eqb). *)
+         { 	Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.length). }
+         subst.  cbn in *.
+         Reconstr.rsimple Reconstr.Empty (@Coq.Init.Datatypes.negb, 
+           @Coq.Init.Datatypes.orb, @Coq.Init.Datatypes.andb, @Coq.Bool.Bool.eqb).
          rewrite <- H1 in *. cbn in H0.
          case_eq a0; intros.
          subst. now contradict H2.
          subst. rewrite <- H2. 
-         assert ( eqb c c = true) by admit.
-(*          Reconstr.reasy Reconstr.Empty (@Coq.Bool.Bool.eqb). *)
+         assert ( eqb c c = true).
+         Reconstr.reasy Reconstr.Empty (@Coq.Bool.Bool.eqb).
          rewrite H1 in H0. 
-         assert (negb c && c = false) by 	admit.
-(*           Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.negb, @Coq.Init.Datatypes.andb). *)
-         rewrite H3 in H0. admit.
-(* 	       Reconstr.rcrush (@Coq.Bool.Bool.negb_true_iff, @Coq.Bool.Bool.orb_false_iff, 
+         assert (negb c && c = false) by 
+         Reconstr.reasy Reconstr.Empty (@Coq.Init.Datatypes.negb, @Coq.Init.Datatypes.andb).
+         rewrite H3 in H0.
+ 	       Reconstr.rcrush (@Coq.Bool.Bool.negb_true_iff, @Coq.Bool.Bool.orb_false_iff, 
            @Coq.Bool.Bool.andb_true_l) (@Coq.Init.Datatypes.negb, @Coq.Init.Datatypes.orb, 
-           @Coq.Init.Datatypes.andb, @Coq.Bool.Bool.eqb). *)
-Admitted.
+           @Coq.Init.Datatypes.andb, @Coq.Bool.Bool.eqb).
+Qed.
 
 
 Lemma ult_list_big_endian_unf: forall a b c d,
@@ -5114,13 +5109,12 @@ orb (andb (Bool.eqb c d) (ult_list_big_endian a b))
     (andb (negb c) d).
 Proof. intro a.
        case_eq a; intros.
-       + cbn in *. case_eq b; intros. admit.
-(* 	       Reconstr.reasy (@Coq.Bool.Bool.andb_false_r) 
-          (@Coq.Init.Datatypes.andb, @Coq.Bool.Bool.eqb, @Coq.Init.Datatypes.orb). *)
-         admit.
-(*          Reconstr.reasy Reconstr.Empty Reconstr.Empty. *)
+       + cbn in *. case_eq b; intros. 
+         Reconstr.reasy (@Coq.Bool.Bool.andb_false_r) 
+          (@Coq.Init.Datatypes.andb, @Coq.Bool.Bool.eqb, @Coq.Init.Datatypes.orb).
+         Reconstr.reasy Reconstr.Empty Reconstr.Empty.
        + cbn in *. case_eq b0; intros; easy.
-Admitted.
+Qed.
 
 Theorem bv_shl_eq: forall (a b : bitvector),
   bv_shl a b = bv_shl_a a b.
