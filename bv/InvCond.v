@@ -773,7 +773,7 @@ Theorem bvashr_ult : forall (n : N), forall (s t : bitvector),
 Proof.
 Admitted.
 
-(* (exists x, (s >>a s) <u t) <=> ((s <u t \/ s >=s 0) /\ t != 0) *)
+(* (exists x, (s >>a s) <u t) => ((s <u t \/ s >=s 0) /\ t != 0) *)
 Theorem bvashr_ult2_ltr : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> 
     (exists (x : bitvector), (size x = n) /\ (bv_ult (bv_ashr_a s x) t = true)) ->
@@ -900,6 +900,140 @@ Theorem bvashr_ugt : forall (n : N), forall (s t : bitvector),
     (bv_ultP t (bv_not (zeros (size t)))).
 Proof.
 Admitted.
+
+(* (exists x, (s >>a x) >u t) => ((s <s (s >> !t)) \/ (t <u s)) *)
+Theorem bvashr_ugt2_ltr: forall (n : N), forall (s t : bitvector),
+  (size s) = n -> (size t) = n -> 
+    (exists (x : bitvector), (size x = n) /\ (bv_ugt (bv_ashr_a s x) t = true)) ->
+    ((bv_slt s (bv_shr_a s (bv_not t)) = true) \/ (bv_ult t s = true)).
+Proof. intros.
+        destruct H1 as (x, (H1, H2)).
+        apply bv_ugt_bv_ult in H2.
+        rewrite bv_ult_nat in *.
+        unfold bv_ashr_a in H2.
+        rewrite H, H1, N.eqb_refl in H2.
+        unfold ashr_aux_a, list2nat_be_a, ashr_n_bits_a, bv_not in H2.
+        case_eq (N.to_nat (list2N x 0) <? length s); intros.
+        - rewrite H3 in H2.
+          case_eq (eqb (last s false) false); intros.
+          + rewrite H4 in H2.
+            assert ((last s false) = false).
+            { destruct ((last s false)); intros; cbn in H4; easy. }
+            destruct (n_cases_all (N.to_nat (list2N x 0))).
+            * rewrite H6 in *.
+              rewrite skip0 in H2.
+              assert (mk_list_false 0 = nil) by easy.
+              rewrite H7, app_nil_r in H2. now right.
+            * destruct (list_cases_all_false s).
+              ** rewrite H7 in H2.
+                 rewrite skipn_nm_false in H2; [ | easy].
+                 rewrite H7. now right.
+              ** specialize (@skipn_lt (N.to_nat (list2N x 0)) s H6 H3 H7); intros.
+                 right.
+                 apply Nat.ltb_lt.
+                 apply Nat.ltb_lt in H2.
+                 apply Nat.ltb_lt in H8.
+                 unfold bv2nat_a, list2nat_be_a in *.
+                 lia.
+          + rewrite H4 in H2. left.
+            unfold bv2nat_a, list2nat_be_a in *.
+            rewrite bv_slt_tf. easy.
+            unfold bv_shr_a, size.
+            assert ((length s) = (length (bv_not t))).
+            unfold bv_not, bits.
+            Reconstr.rcrush (@BV.BVList.RAWBITVECTOR_LIST.not_list_length, 
+               @Coq.NArith.Nnat.Nat2N.id) 
+              (@BV.BVList.RAWBITVECTOR_LIST.bitvector, 
+               @BV.BVList.RAWBITVECTOR_LIST.size).
+            rewrite <- H5, N.eqb_refl.
+            Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.length_shr_n_bits_a)
+              (@BV.BVList.RAWBITVECTOR_LIST.bitvector).
+            destruct ((last s false)); intros; cbn in H4; easy.
+            destruct (list_cases_all_true t).
+            * rewrite H5 in H2.
+              assert (length (skipn (N.to_nat (list2N x 0)) s ++ 
+                             mk_list_true (N.to_nat (list2N x 0))) =
+                      length t). 
+              Reconstr.rcrush (@BV.BVList.RAWBITVECTOR_LIST.length_skipn,
+                @Coq.Arith.PeanoNat.Nat.ltb_lt, 
+                @Coq.NArith.Nnat.Nat2N.id, 
+                @Coq.Lists.List.app_length, 
+                @BV.BVList.RAWBITVECTOR_LIST.length_mk_list_true, 
+                @Coq.Arith.PeanoNat.Nat.sub_add, 
+                @Coq.Arith.PeanoNat.Nat.lt_le_incl) 
+               (@BV.BVList.RAWBITVECTOR_LIST.size, 
+                @BV.BVList.RAWBITVECTOR_LIST.bitvector).
+              rewrite <- H6 in H2.
+              now rewrite pow_ltb_false in H2.
+            *
+              apply mk_list_false_not_true in H5.
+              specialize (@not_mk_list_false (bv_not t)); intros.
+              assert ((length (bv_not t)) = length t).
+              Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.not_list_length) 
+               (@BV.BVList.RAWBITVECTOR_LIST.bits,
+                @BV.BVList.RAWBITVECTOR_LIST.bitvector, 
+                @BV.BVList.RAWBITVECTOR_LIST.bv_not).
+              rewrite H7 in H6.
+              specialize (H6 H5).
+              eapply last_bv_ashr_gt0 with (s:= s) in H6.
+              easy.
+              Reconstr.rsimple (@BV.BVList.RAWBITVECTOR_LIST.bv_not_size)
+               Reconstr.Empty.
+        - rewrite H3 in H2.
+          case_eq (eqb (last s false) false); intros.
+          + rewrite H4 in H2.
+            assert ((last s false) = false).
+            { destruct ((last s false)); intros; cbn in H4; easy. }
+            unfold bv2nat_a, list2nat_be_a in H2.
+            rewrite list2N_mk_list_false in H2. easy.
+          + rewrite H4 in H2.
+            destruct (list_cases_all_true t).
+            * rewrite H5 in H2.
+              Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.skipn_same_mktr, 
+                @BV.BVList.RAWBITVECTOR_LIST.skipn_gt_false, 
+                @Coq.NArith.Nnat.Nat2N.id) 
+               (@BV.BVList.RAWBITVECTOR_LIST.list2nat_be_a,
+                @BV.BVList.RAWBITVECTOR_LIST.bv2nat_a, 
+                @BV.BVList.RAWBITVECTOR_LIST.bitvector,
+                @BV.BVList.RAWBITVECTOR_LIST.size).
+            * apply mk_list_false_not_true in H5.
+              specialize (@not_mk_list_false (bv_not t)); intros.
+              assert ((length (bv_not t)) = length t).
+              Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.not_list_length) 
+               (@BV.BVList.RAWBITVECTOR_LIST.bits,
+                @BV.BVList.RAWBITVECTOR_LIST.bitvector, 
+                @BV.BVList.RAWBITVECTOR_LIST.bv_not).
+              rewrite H7 in H6.
+              specialize (H6 H5).
+              eapply last_bv_ashr_gt0 with (s:= s) in H6.
+              left. rewrite bv_slt_tf. easy.
+              unfold bv_shr_a, size.
+              assert ((length s) = (length (bv_not t))).
+              unfold bv_not, bits.
+              Reconstr.rcrush (@BV.BVList.RAWBITVECTOR_LIST.not_list_length, 
+                 @Coq.NArith.Nnat.Nat2N.id) 
+                (@BV.BVList.RAWBITVECTOR_LIST.bitvector, 
+                 @BV.BVList.RAWBITVECTOR_LIST.size).
+              rewrite <- H8, N.eqb_refl.
+              Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.length_shr_n_bits_a)
+                (@BV.BVList.RAWBITVECTOR_LIST.bitvector).
+              destruct ((last s false)); intros; cbn in H4; easy.
+              easy.
+              Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.bv_not_size) 
+                Reconstr.Empty.
+        - unfold bv_ashr_a. rewrite H, H1, N.eqb_refl.
+          Reconstr.rsimple (@BV.BVList.RAWBITVECTOR_LIST.length_ashr_aux_a,
+            @BV.BVList.RAWBITVECTOR_LIST.of_bits_size, 
+            @Coq.Arith.PeanoNat.Nat.eqb_eq, 
+            @BV.BVList.BITVECTOR_LIST.of_bits_size) 
+           (@BV.BVList.RAWBITVECTOR_LIST.size,
+            @BV.BVList.RAWBITVECTOR_LIST.bitvector).
+        - Reconstr.reasy (@Coq.Arith.PeanoNat.Nat.eqb_eq,
+             @BV.BVList.BITVECTOR_LIST.of_bits_size,
+             @BV.BVList.RAWBITVECTOR_LIST.of_bits_size) 
+            (@BV.BVList.RAWBITVECTOR_LIST.bitvector, 
+             @BV.BVList.RAWBITVECTOR_LIST.size).
+Qed.
 
 (* (exists x, (s >>a x) >u t) <=> ((s <s (s >> !t)) \/ (t <u s)) *)
 Theorem bvashr_ugt2 : forall (n : N), forall (s t : bitvector),
