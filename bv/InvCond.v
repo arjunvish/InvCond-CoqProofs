@@ -67,7 +67,7 @@ Proof. intro a.
               @Coq.NArith.BinNatDef.N.of_nat,
               @Coq.Init.Peano.gt, @Coq.NArith.BinNatDef.N.double,
               @BV.BVList.RAWBITVECTOR_LIST.bv2nat_a).
-Qed.    
+Qed.
 
 (*
 Lemma bv_non_neg : forall b : bitvector,
@@ -477,6 +477,56 @@ Proof. intros n s t Hs Ht.
          rewrite bv_shr_eq, bv_shl_eq in A.
          rewrite bv_shl_eq.
          easy.
+Qed.
+
+
+(* (exists x, x << s != t) => t != 0 or s <u size(s) *)
+Theorem bvshl_neq_ltr: forall (n : N), forall (s t : bitvector), 
+  (size s) = n -> (size t) = n ->
+    (exists (x : bitvector), (size x = n) /\ bv_eq (bv_shl_a x s) t = false) ->
+    bv_eq t (zeros (size t)) = false \/ 
+    bv_ult s (nat2bv (N.to_nat (size s)) (N.to_nat (size s))) = true.
+Proof. intros.
+        destruct H1 as (x, (H1, H2)).
+        unfold nat2bv. rewrite N2Nat.id.
+        unfold bv_shl_a, shl_n_bits_a, list2nat_be_a in *.
+        rewrite bv_ult_nat in *.
+        unfold bv2nat_a, list2nat_be_a.
+        rewrite list2N_N2List_eq.
+        rewrite H, H1, N.eqb_refl in H2.
+        case_eq ( N.to_nat (list2N s 0) <? length x); intros.
+        - rewrite H3 in H2.
+          destruct (list_cases_all_false t).
+          + destruct (list_cases_all_false x).
+            * rewrite H4, H5 in H2.
+              Reconstr.reasy (@Coq.NArith.Nnat.Nat2N.id)
+               (@BV.BVList.RAWBITVECTOR_LIST.bitvector, 
+                @BV.BVList.RAWBITVECTOR_LIST.size).
+            * right. rewrite H, <- H1.
+              unfold size. now rewrite Nat2N.id.
+          + left. unfold zeros, size.
+            rewrite Nat2N.id. 
+            apply List_neq2 in H4.
+            Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.bv_mk_eq) 
+             (@BV.BVList.RAWBITVECTOR_LIST.bitvector).
+        - rewrite H3 in H2. left.
+          unfold zeros, size.
+          rewrite Nat2N.id.
+          unfold bv_eq in *.
+          unfold size in *. rewrite length_mk_list_false in *.
+          rewrite H1, H0, N.eqb_refl in H2.
+          rewrite H0, N.eqb_refl.
+          unfold bits in *.
+          apply List_neq2.
+          apply List_neq in H2.
+          Reconstr.reasy (@BV.BVList.BITVECTOR_LIST.of_bits_size,
+            @BV.BVList.RAWBITVECTOR_LIST.of_bits_size) 
+           (@BV.BVList.RAWBITVECTOR_LIST.bitvector).
+        - rewrite length_N2list.
+          Reconstr.reasy (@Coq.NArith.Nnat.Nat2N.id, 
+            @Coq.Arith.PeanoNat.Nat.eqb_eq) 
+           (@BV.BVList.RAWBITVECTOR_LIST.bitvector, 
+            @BV.BVList.RAWBITVECTOR_LIST.size).
 Qed.
 
 (* (exists x, x << s != t) <=> t != 0 or s <u size(s) *)
@@ -1212,7 +1262,7 @@ Theorem bvmult_ugt : forall (n : N), forall (s t : bitvector),
     (exists (x : bitvector), (size x = n) /\ (bv_ugtP (bv_mult x s) t))
     (bv_ultP t (bv_or (bv_neg s) s)).
 Proof.
-Admitted. 
+Admitted.
 (*------------------------------------------------------------*)
 
 
