@@ -419,29 +419,37 @@ Theorem bvshr_ugt : forall (n : N), forall (s t : bitvector),
     (exists (x : bitvector), (size x = n) /\ bv_ugtP (bv_shr x s) t)
     (bv_ultP t (bv_shr (bv_not s) s)).
 Proof. 
-  intros. split. 
-  + intros. destruct H1 as (x, (Hs, H1)). apply bv_ugtP_bv_ultP in H1.
+  intros n s t Hs Ht. split. 
+  + intros. destruct H as (x, (Hx, ugt_shr_t)). apply bv_ugtP_bv_ultP in ugt_shr_t.
     rewrite bv_shr_eq in *.
-    assert (forall (a b : bitvector), size a = size b ->
+    assert (ule_shr_shrnot : forall (a b : bitvector), size a = size b ->
+            lt (list2nat_be_a b) (length a) ->
             bv_uleP (bv_shr_a a b) (bv_shr_a (bv_not b) b)).
-    { (* Prove: ~s has S leading 1s, where S = BV2NAT(s).
-         Then, ~s >> S has S leading 0s and (len(s) - S) trailings 1s.
-         forall x, x >> S has S leading 0s and (len(s) - S) somethings.
-                         B       len(b)-B  
-         (~s >> S) = (00...0) ++ (11...1)
-         (x  >> S) = (00...0) ++ (xx...x)
-         We know (xx...x) <= (11...1).
-         Thus, [(00...0) ++ (xx...x)] <= [(00...0) ++ (11...1)].
-         Thus, (x >> s) <= (~s >> s). *)
-         admit. }
-    rewrite <- H0 in H.
-    specialize (@H2 x s H). pose proof bv_ult_uleP_trans.
-    specialize (@H3 t (bv_shr_a x s) (bv_shr_a (bv_not s) s) H1 H2).
-    apply H3.
-  + intros. exists (bv_not s). split.
-    - apply (@bv_not_size n s H).
-    - apply bv_ultP_bv_ugtP in H1. apply H1. 
+    { admit. }
+    assert (lt_s_lenx : list2nat_be_a s < length x).
+    { apply not_ge. unfold not. intros ge_s_lenx. unfold bv_shr_a in ugt_shr_t. 
+      pose proof Hs as Hss. rewrite <- Hx in Hss. rewrite <- Hss in ugt_shr_t.
+      assert (Hs_refl : (size s =? size s)%N = true). 
+      { apply NBoolEqualityFacts.eqb_refl. }
+      rewrite Hs_refl in ugt_shr_t. unfold shr_n_bits_a in ugt_shr_t. 
+      assert (not_le_s_lenx : (list2nat_be_a s <? length x) = false).
+      { rewrite Nat.ltb_ge. apply ge_s_lenx. } 
+      rewrite not_le_s_lenx in ugt_shr_t. 
+      pose proof not_bv_ultP_x_zero as not_lt. unfold zeros, size, not in not_lt.
+      specialize (@not_lt t). rewrite (@Nat2N.id (length t)) in not_lt.
+      pose proof Hx as lenxt. rewrite <- Ht in lenxt. unfold size in lenxt.
+      apply Nat2N.inj in lenxt. rewrite lenxt in ugt_shr_t.
+      specialize (@not_lt ugt_shr_t). apply not_lt. 
+    }
+    rewrite <- Hs in Hx. specialize (@ule_shr_shrnot x s Hx lt_s_lenx). 
+    pose proof bv_ult_uleP_trans as trans.
+    specialize (@trans t (bv_shr_a x s) (bv_shr_a (bv_not s) s) 
+    ugt_shr_t ule_shr_shrnot). apply trans.
+  + intros lt. exists (bv_not s). split.
+    - apply (@bv_not_size n s Hs).
+    - apply bv_ultP_bv_ugtP in lt. apply lt. 
 Admitted.
+
 
 (* (exists x, (s >> x) >u t) <=> (t <u s) *)
 Theorem bvshr_ugt2 : forall (n : N), forall (s t : bitvector),

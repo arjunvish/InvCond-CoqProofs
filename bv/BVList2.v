@@ -3782,6 +3782,44 @@ Proof.
 Qed.
 
 
+(* forall x, ~(x < 0) *)
+Lemma not_ult_list_big_endian_x_0 : forall (x : list bool),
+  ult_list_big_endian x (mk_list_false (length x)) = false.
+Proof.
+  intros x. induction x.
+  + easy.
+  + case a.
+    - assert (simpl : mk_list_false (length (true :: x)) = 
+              false :: mk_list_false (length x)).
+      { easy. } rewrite simpl. 
+      simpl. case x; easy.
+    - simpl. rewrite IHx. case x; easy.
+Qed.
+
+Lemma not_ult_list_x_zero : forall (x : bitvector), 
+  ult_list x (mk_list_false (length x)) = false.
+Proof.
+  intros x. unfold ult_list. rewrite rev_mk_list_false.
+  rewrite <- rev_length. apply not_ult_list_big_endian_x_0.
+Qed.
+
+Lemma not_bv_ultP_x_zero : forall (x : bitvector), ~(bv_ultP x (zeros (size x))).
+Proof.
+  intros x. unfold not. intros contr_x_0.
+  unfold bv_ultP in contr_x_0. rewrite zeros_size in contr_x_0.
+  rewrite eqb_refl in contr_x_0. unfold ult_listP in contr_x_0.
+  unfold zeros in contr_x_0. unfold size in contr_x_0. 
+  rewrite Nat2N.id in contr_x_0. 
+  now rewrite not_ult_list_x_zero in contr_x_0.
+Qed.
+
+Lemma not_bv_ult_x_zero : forall (x : bitvector), bv_ult x (zeros (size x)) = false.
+Proof.
+  intros x. unfold bv_ult. rewrite zeros_size. rewrite eqb_refl.
+  unfold zeros. unfold size. rewrite Nat2N.id. apply not_ult_list_x_zero.
+Qed.
+
+
 
 
 
