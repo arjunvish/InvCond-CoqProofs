@@ -11,12 +11,10 @@ From Hammer Require Import Hammer Reconstr.
 
 Theorem length_of_tail : forall (h : bool) (t : list bool), 
  length (h :: t) = S (length t).
-Proof. 
   intros h t.
-  induction t as [| h' t' IH].
-  + reflexivity. 
-  + reflexivity. 
-  Qed.
+Proof. 
+  induction t; reflexivity.
+Qed.
 
 Theorem non_empty_list_size : forall (h : bool) (t : list bool),
           N.to_nat (size (h :: t)) = S (N.to_nat (size t)).
@@ -423,7 +421,9 @@ Theorem bvshr_ugt : forall (n : N), forall (s t : bitvector),
 Proof. 
   intros. split. 
   + intros. destruct H1 as (x, (Hs, H1)). apply bv_ugtP_bv_ultP in H1.
-    assert (forall (a b : bitvector), bv_uleP (bv_shr a b) (bv_shr (bv_not b) b)).
+    rewrite bv_shr_eq in *.
+    assert (forall (a b : bitvector), size a = size b ->
+            bv_uleP (bv_shr_a a b) (bv_shr_a (bv_not b) b)).
     { (* Prove: ~s has S leading 1s, where S = BV2NAT(s).
          Then, ~s >> S has S leading 0s and (len(s) - S) trailings 1s.
          forall x, x >> S has S leading 0s and (len(s) - S) somethings.
@@ -434,8 +434,9 @@ Proof.
          Thus, [(00...0) ++ (xx...x)] <= [(00...0) ++ (11...1)].
          Thus, (x >> s) <= (~s >> s). *)
          admit. }
-    specialize (@H2 x s). pose proof bv_ult_uleP_trans.
-    specialize (@H3 t (bv_shr x s) (bv_shr (bv_not s) s) H1 H2).
+    rewrite <- H0 in H.
+    specialize (@H2 x s H). pose proof bv_ult_uleP_trans.
+    specialize (@H3 t (bv_shr_a x s) (bv_shr_a (bv_not s) s) H1 H2).
     apply H3.
   + intros. exists (bv_not s). split.
     - apply (@bv_not_size n s H).
@@ -783,7 +784,7 @@ Theorem bvashr_ult : forall (n : N), forall (s t : bitvector),
 Proof.
 Admitted.
 
-(* (exists x, (s >>a s) <u t) <=> ((s <u t \/ s >=s 0) /\ t != 0) *)
+(* (exists x, (s >>a x) <u t) <=> ((s <u t \/ s >=s 0) /\ t != 0) *)
 Theorem bvashr_ult2 : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> iff
     (exists (x : bitvector), (size x = n) /\ (bv_ultP (bv_ashr s x) t))
