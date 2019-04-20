@@ -4792,21 +4792,9 @@ Qed.
 
 Lemma skipn_b_zeros : forall (b : bitvector), lt (list2nat_be_a b) (length b) ->
   skipn (list2nat_be_a b) b = mk_list_false ((length b) - (list2nat_be_a b)).
+Proof.
+  unfold list2nat_be_a. intros b lt_B_b.
 Admitted.
-
-(*
-case_eq (length b).
-  + intros len_b. simpl. assert (bvnot_nil : length b = O -> bv_not b = []).
-    { intros. induction b.
-      + easy.
-      + now contradict H. }
-    specialize (@bvnot_nil len_b). rewrite bvnot_nil. 
-    assert (skipn_nil : forall n, skipn n ([] : list bool) = []).
-    { induction n; easy. }
-    apply skipn_nil.
-  + intros n len_b. simpl.
-Admitted.
-*)
 
 Lemma skipn_bvnot : forall (b : bitvector), lt (list2nat_be_a b) (length b) -> 
   skipn (list2nat_be_a b) (bv_not b) = 
