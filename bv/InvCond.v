@@ -443,7 +443,6 @@ Proof. intros.
           (@BV.BVList.RAWBITVECTOR_LIST.bits, 
            @BV.BVList.RAWBITVECTOR_LIST.bitvector).
        - rewrite H2 in H1. rewrite map_length in H1.
-         apply bv_ult_bv_ugt.
          assert (length s = length t). 
          Reconstr.reasy 
            (@BV.BVList.BITVECTOR_LIST.of_bits_size, 
