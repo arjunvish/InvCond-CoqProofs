@@ -413,6 +413,57 @@ Theorem bvshr_ult2 : forall (n : N), forall (s t : bitvector),
 Proof.
 Admitted.
 
+
+(* (exists x, (x >> s) >u t) <= (t <u (~s >> s)) *)
+Theorem bvshr_ugt_rtl : forall (n : N), forall (s t : bitvector), 
+  (size s) = n -> (size t) = n ->
+    (bv_ult t (bv_shr_a (bv_not s) s) = true) -> 
+    (exists (x : bitvector), (size x = n) /\ bv_ugt (bv_shr_a x s) t = true).
+Proof. intros.
+       rewrite bv_ult_nat in *.
+       exists (bv_not s). split.
+       Reconstr.rcrush (@BV.BVList.RAWBITVECTOR_LIST.bv_not_size) Reconstr.Empty.
+       unfold bv_shr_a, bv_not, size, bits in *.
+       rewrite map_length, N.eqb_refl in *.
+       unfold shr_n_bits_a, bv2nat_a, list2nat_be_a in *.
+       case_eq ( N.to_nat (list2N s) <? length (map negb s)); intros.
+       - rewrite H2 in H1. apply bv_ult_bv_ugt.
+         rewrite bv_ult_nat in *.
+         unfold shr_n_bits_a, bv2nat_a, list2nat_be_a in *.
+         easy. rewrite app_length, length_mk_list_false.
+         Reconstr.rcrush (@BV.BVList.RAWBITVECTOR_LIST.of_bits_size, 
+           @BV.BVList.BITVECTOR_LIST.of_bits_size, 
+           @Coq.Arith.PeanoNat.Nat.sub_add, 
+           @BV.BVList.RAWBITVECTOR_LIST.not_list_length,
+           @Coq.Arith.PeanoNat.Nat.eqb_eq, 
+           @Coq.Arith.PeanoNat.Nat.ltb_lt, 
+           @BV.BVList.RAWBITVECTOR_LIST.length_skipn, 
+           @Coq.Arith.PeanoNat.Nat.lt_le_incl, 
+           @BV.BVList.RAWBITVECTOR_LIST.bv_xor_1_true) 
+          (@BV.BVList.RAWBITVECTOR_LIST.bits, 
+           @BV.BVList.RAWBITVECTOR_LIST.bitvector).
+       - rewrite H2 in H1. rewrite map_length in H1.
+         apply bv_ult_bv_ugt.
+         assert (length s = length t). 
+         Reconstr.reasy 
+           (@BV.BVList.BITVECTOR_LIST.of_bits_size, 
+            @BV.BVList.RAWBITVECTOR_LIST.of_bits_size) 
+           (@BV.BVList.RAWBITVECTOR_LIST.bitvector).
+         rewrite H3 in H1.
+         rewrite list_lt_false in H1. easy.
+       - unfold bv_shr_a, bv_not, size, bits.
+         rewrite map_length, N.eqb_refl. 
+         Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.not_list_length,
+           @Coq.Arith.PeanoNat.Nat.eqb_eq, 
+           @Coq.NArith.Nnat.Nat2N.id,
+           @BV.BVList.RAWBITVECTOR_LIST.length_shr_n_bits_a) 
+          (@BV.BVList.RAWBITVECTOR_LIST.bitvector, 
+           @BV.BVList.RAWBITVECTOR_LIST.bv_not, 
+           @BV.BVList.RAWBITVECTOR_LIST.list2nat_be_a, 
+           @BV.BVList.RAWBITVECTOR_LIST.size, 
+           @BV.BVList.RAWBITVECTOR_LIST.bits).
+Qed.
+
 (* (exists x, (x >> s) >u t) <=> (t <u (~s >> s)) *)
 Theorem bvshr_ugt : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff
