@@ -364,7 +364,7 @@ Proof. split; intros.
          exists (bv2nat_a x).
          unfold bv2nat_a. 
          unfold nat2bv, list2nat_be_a.
-         case_eq (N.to_nat (list2N x 0) =? 0); intros.
+         case_eq (N.to_nat (list2N x) =? 0); intros.
          rewrite bv_shr_eq in H2.
          unfold bv_shr_a, list2nat_be_a in H2. 
          apply Nat.eqb_eq in H3.
@@ -503,7 +503,7 @@ Proof. intros.
         unfold bv2nat_a, list2nat_be_a.
         rewrite list2N_N2List_eq.
         rewrite H, H1, N.eqb_refl in H2.
-        case_eq ( N.to_nat (list2N s 0) <? length x); intros.
+        case_eq ( N.to_nat (list2N s) <? length x); intros.
         - rewrite H3 in H2.
           destruct (list_cases_all_false t).
           + destruct (list_cases_all_false x).
@@ -844,7 +844,7 @@ Proof. intros. split.
         unfold bv_ashr_a in *.
         rewrite H, H1, N.eqb_refl in H2.
         unfold ashr_aux_a, list2nat_be_a, ashr_n_bits_a in *.
-        case_eq (N.to_nat (list2N x 0) <? length s); intros. 
+        case_eq (N.to_nat (list2N x) <? length s); intros. 
         - rewrite H3 in H2.
           case_eq (eqb (last s false) false); intros.
           + rewrite H4 in H2.
@@ -863,7 +863,7 @@ Proof. intros. split.
           + rewrite H4 in H2.
             unfold bv2nat_a, list2nat_be_a, zeros, size in *.
             rewrite Nat2N.id in *. left.
-            destruct (n_cases_all (N.to_nat (list2N x 0))).
+            destruct (n_cases_all (N.to_nat (list2N x))).
             * rewrite H5 in *.
               rewrite skip0 in H2.
               assert (mk_list_true 0 = nil) by easy.
@@ -872,7 +872,7 @@ Proof. intros. split.
               ** rewrite H6 in H2.
                  rewrite skipn_nm in H2; [ | easy].
                  now rewrite H6.
-              ** specialize (@skipn_gt (N.to_nat (list2N x 0)) s H5 H3 H6); intros.
+              ** specialize (@skipn_gt (N.to_nat (list2N x)) s H5 H3 H6); intros.
                  apply Nat.ltb_lt.
                  apply Nat.ltb_lt in H2.
                  apply Nat.ltb_lt in H7.
@@ -972,13 +972,13 @@ Proof. intros.
         unfold bv_ashr_a in H2.
         rewrite H, H1, N.eqb_refl in H2.
         unfold ashr_aux_a, list2nat_be_a, ashr_n_bits_a, bv_not in H2.
-        case_eq (N.to_nat (list2N x 0) <? length s); intros.
+        case_eq (N.to_nat (list2N x) <? length s); intros.
         - rewrite H3 in H2.
           case_eq (eqb (last s false) false); intros.
           + rewrite H4 in H2.
             assert ((last s false) = false).
             { destruct ((last s false)); intros; cbn in H4; easy. }
-            destruct (n_cases_all (N.to_nat (list2N x 0))).
+            destruct (n_cases_all (N.to_nat (list2N x))).
             * rewrite H6 in *.
               rewrite skip0 in H2.
               assert (mk_list_false 0 = nil) by easy.
@@ -987,7 +987,7 @@ Proof. intros.
               ** rewrite H7 in H2.
                  rewrite skipn_nm_false in H2; [ | easy].
                  rewrite H7. now right.
-              ** specialize (@skipn_lt (N.to_nat (list2N x 0)) s H6 H3 H7); intros.
+              ** specialize (@skipn_lt (N.to_nat (list2N x)) s H6 H3 H7); intros.
                  right.
                  apply Nat.ltb_lt.
                  apply Nat.ltb_lt in H2.
@@ -1010,8 +1010,8 @@ Proof. intros.
             destruct ((last s false)); intros; cbn in H4; easy.
             destruct (list_cases_all_true t).
             * rewrite H5 in H2.
-              assert (length (skipn (N.to_nat (list2N x 0)) s ++ 
-                             mk_list_true (N.to_nat (list2N x 0))) =
+              assert (length (skipn (N.to_nat (list2N x)) s ++ 
+                             mk_list_true (N.to_nat (list2N x))) =
                       length t). 
               Reconstr.rcrush (@BV.BVList.RAWBITVECTOR_LIST.length_skipn,
                 @Coq.Arith.PeanoNat.Nat.ltb_lt, 
