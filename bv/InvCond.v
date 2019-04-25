@@ -413,6 +413,42 @@ Theorem bvshr_ult2 : forall (n : N), forall (s t : bitvector),
 Proof.
 Admitted.
 
+
+(* (exists x, (x >> s) >u t) <= (t <u (~s >> s)) *)
+Theorem bvshr_ugt_rtl : forall (n : N), forall (s t : bitvector), 
+  (size s) = n -> (size t) = n ->
+    (bv_ult t (bv_shr_a (bv_not s) s) = true) -> 
+    (exists (x : bitvector), (size x = n) /\ bv_ugt (bv_shr_a x s) t = true).
+Proof. intros.
+       exists (bv_not s). split.
+       Reconstr.rcrush (@BV.BVList.RAWBITVECTOR_LIST.bv_not_size) Reconstr.Empty.
+       apply bv_ult_bv_ugt.
+       rewrite bv_ult_nat in *; 
+       [ easy |
+         unfold bv_shr_a, bv_not, size, bits;
+         rewrite map_length, N.eqb_refl; 
+         Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.not_list_length,
+           @Coq.Arith.PeanoNat.Nat.eqb_eq, 
+           @Coq.NArith.Nnat.Nat2N.id,
+           @BV.BVList.RAWBITVECTOR_LIST.length_shr_n_bits_a) 
+          (@BV.BVList.RAWBITVECTOR_LIST.bitvector, 
+           @BV.BVList.RAWBITVECTOR_LIST.bv_not, 
+           @BV.BVList.RAWBITVECTOR_LIST.list2nat_be_a,
+           @BV.BVList.RAWBITVECTOR_LIST.size, 
+           @BV.BVList.RAWBITVECTOR_LIST.bits) |
+         unfold bv_shr_a, bv_not, size, bits;
+         rewrite map_length, N.eqb_refl; 
+         Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.not_list_length,
+           @Coq.Arith.PeanoNat.Nat.eqb_eq, 
+           @Coq.NArith.Nnat.Nat2N.id,
+           @BV.BVList.RAWBITVECTOR_LIST.length_shr_n_bits_a) 
+          (@BV.BVList.RAWBITVECTOR_LIST.bitvector, 
+           @BV.BVList.RAWBITVECTOR_LIST.bv_not, 
+           @BV.BVList.RAWBITVECTOR_LIST.list2nat_be_a,
+           @BV.BVList.RAWBITVECTOR_LIST.size, 
+           @BV.BVList.RAWBITVECTOR_LIST.bits)].
+Qed.
+
 (* (exists x, (x >> s) >u t) <=> (t <u (~s >> s)) *)
 Theorem bvshr_ugt : forall (n : N), forall (s t : bitvector), 
   (size s) = n -> (size t) = n -> iff
