@@ -504,7 +504,9 @@ Proof. intros.
         rewrite list2N_N2List_eq.
         rewrite H, H1, N.eqb_refl in H2.
         case_eq ( N.to_nat (list2N s) <? length x); intros.
-        - rewrite H3 in H2.
+        - right. rewrite H, <- H1. 
+          unfold size. now rewrite Nat2N.id.
+        (*- rewrite H3 in H2.
           destruct (list_cases_all_false t).
           + destruct (list_cases_all_false x).
             * rewrite H4, H5 in H2.
@@ -517,7 +519,7 @@ Proof. intros.
             rewrite Nat2N.id. 
             apply List_neq2 in H4.
             Reconstr.reasy (@BV.BVList.RAWBITVECTOR_LIST.bv_mk_eq) 
-             (@BV.BVList.RAWBITVECTOR_LIST.bitvector).
+             (@BV.BVList.RAWBITVECTOR_LIST.bitvector).*)
         - rewrite H3 in H2. left.
           unfold zeros, size.
           rewrite Nat2N.id.

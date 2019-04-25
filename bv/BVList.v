@@ -3831,16 +3831,14 @@ Definition bv2nat_a (a: list bool) := list2nat_be_a a.
 
 (*Nat -> BV Conversion *)
 
-(* BE: that seems incorrect?
-   To test if the function works as expected, please
-   run "Eval compute in fun_name args."
+(* Coq can't figure out termination of nat2bv_aux 
 
- Fixpoint nat2bv_aux (n : nat) (acc : list bool) :=
+Fixpoint nat2bv_aux (n : nat) (acc : list bool) {struct n} :=
   match n with
   | O => acc
   | S n' => match ((N.of_nat n) mod 2) with
-            | 0 => nat2bv_aux n' (acc ++ [true])
-            | _ => nat2bv_aux n' (acc ++ [false])
+            | 0 => nat2bv_aux (Nat.div n 2) (acc ++ [false])
+            | _ => nat2bv_aux (Nat.div n 2) (acc ++ [true])
             end
   end.
 
@@ -3853,9 +3851,10 @@ Fixpoint pad (bv : list bool) (diff : nat) :=
 Definition pad_to (size : nat) (bv : list bool) : list bool :=
   pad bv (size - (length bv)).
 
-Definition nat2bv (n : nat) (size : nat) : bitvector :=
+Definition Pnat2bv (n : nat) (size : nat) : bitvector :=
   pad_to size (nat2bv_aux n nil).
- *)
+*)
+ 
 
 
 Fixpoint pos2list (n: positive) acc :=
@@ -4790,10 +4789,19 @@ Proof.
       intros Hxy. inversion Hxy. easy. 
 Qed.
 
+Lemma skipn_b_zeros_aux : forall (b : bitvector), 
+  lt (N.to_nat (list2N b)) (length b) -> 
+  list2N b = list2N (firstn ((N.to_nat (list2N b))) b).
+Admitted.
+
 Lemma skipn_b_zeros : forall (b : bitvector), lt (list2nat_be_a b) (length b) ->
   skipn (list2nat_be_a b) b = mk_list_false ((length b) - (list2nat_be_a b)).
 Proof.
-  unfold list2nat_be_a. intros b lt_B_b.
+  intros b lt_B_lenb. unfold list2nat_be_a in *.
+  pose proof skipn_b_zeros_aux as shrink_b. specialize (@shrink_b b lt_B_lenb).
+  pose proof firstn_skipn as firstn_skipn. 
+  specialize (@firstn_skipn bool (N.to_nat (list2N b)) b).
+  unfold list2N in shrink_b at 1.
 Admitted.
 
 Lemma skipn_bvnot : forall (b : bitvector), lt (list2nat_be_a b) (length b) -> 
@@ -4805,6 +4813,12 @@ Proof.
   apply eq_bv_not in skipn_b_zeros. rewrite bv_not_false in skipn_b_zeros.
   rewrite skipn_bv_not in skipn_b_zeros. apply skipn_b_zeros.
 Qed.
+
+Lemma N_ule_implies_bv_ule : forall (m n : N), m <= n -> 
+  ule_list_big_endian (N2list m (N.to_nat (N.size m))) 
+                      (N2list n (N.to_nat (N.size m))) = true.
+Proof.
+Admitted.
 
 Lemma bv_uleP_shr_a_neg : forall (a b : bitvector), size a = size b ->
   lt (list2nat_be_a b) (length a) ->
