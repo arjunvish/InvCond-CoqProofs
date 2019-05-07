@@ -99,6 +99,7 @@ Module Type BITVECTOR.
   Parameter bv_xor    : forall n, bitvector n -> bitvector n -> bitvector n.
   Parameter bv_add    : forall n, bitvector n -> bitvector n -> bitvector n.
   Parameter bv_subt   : forall n, bitvector n -> bitvector n -> bitvector n.
+  Parameter bv_subt'  : forall n, bitvector n -> bitvector n -> bitvector n.
   Parameter bv_mult   : forall n, bitvector n -> bitvector n -> bitvector n.
   Parameter bv_ult    : forall n, bitvector n -> bitvector n -> bool.
   Parameter bv_slt    : forall n, bitvector n -> bitvector n -> bool.
@@ -109,12 +110,13 @@ Module Type BITVECTOR.
   Parameter bv_uleP   : forall n, bitvector n -> bitvector n -> Prop.
 
   Parameter bv_ugt    : forall n, bitvector n -> bitvector n -> bool.
-  
+
   Parameter bv_ugtP   : forall n, bitvector n -> bitvector n -> Prop.
 
   Parameter bv_shl    : forall n, bitvector n -> bitvector n -> bitvector n.
   Parameter bv_shr    : forall n, bitvector n -> bitvector n -> bitvector n.
   Parameter bv_ashr   : forall n, bitvector n -> bitvector n -> bitvector n.
+  Parameter bv_ashr_a : forall n, bitvector n -> bitvector n -> bitvector n.
 
     (*unary operations*)
   Parameter bv_not    : forall n,     bitvector n -> bitvector n.
@@ -155,6 +157,13 @@ Module Type BITVECTOR.
 
   Parameter _of_bits  : forall (l: list bool) (s : N), bitvector s.
 
+  (** for invertibility conditions *)
+  Parameter bv2nat_a: forall n, bitvector n -> nat.
+  Axiom bv_add_subst_opp: forall n (a b: bitvector n), bv_eq (bv_add (bv_subt' a b) b) a = true.
+  Axiom bv_ult_nat: forall n (a b: bitvector n), (bv_ult a b) = (bv2nat_a a <? bv2nat_a b)%nat.
+(*   Axiom inv_bvadd: forall n, forall (s t : bitvector n),
+    iff (exists (x : bitvector n), ((bv_add x s) = t)) True. *)
+
 End BITVECTOR.
 
 Module Type RAWBITVECTOR.
@@ -181,9 +190,11 @@ Parameter bv_xor     : bitvector -> bitvector -> bitvector.
 Parameter bv_add     : bitvector -> bitvector -> bitvector.
 Parameter bv_mult    : bitvector -> bitvector -> bitvector.
 Parameter bv_subt    : bitvector -> bitvector -> bitvector.
+Parameter bv_subt'   : bitvector -> bitvector -> bitvector.
 Parameter bv_ult     : bitvector -> bitvector -> bool.
 Parameter bv_slt     : bitvector -> bitvector -> bool.
 Parameter bv_ule     : bitvector -> bitvector -> bool.
+Parameter bv2nat_a   : bitvector -> nat.
 
 Parameter bv_ultP    : bitvector -> bitvector -> Prop.
 Parameter bv_sltP    : bitvector -> bitvector -> Prop.
@@ -195,6 +206,7 @@ Parameter bv_ugtP    : bitvector -> bitvector -> Prop.
 Parameter bv_shl     : bitvector -> bitvector -> bitvector.
 Parameter bv_shr     : bitvector -> bitvector -> bitvector.
 Parameter bv_ashr    : bitvector -> bitvector -> bitvector.
+Parameter bv_ashr_a  : bitvector -> bitvector -> bitvector.
 
 (*unary operations*)
 Parameter bv_not     : bitvector -> bitvector.
@@ -219,12 +231,14 @@ Axiom bv_or_size     : forall n a b, size a = n -> size b = n -> size (bv_or a b
 Axiom bv_xor_size    : forall n a b, size a = n -> size b = n -> size (bv_xor a b) = n.
 Axiom bv_add_size    : forall n a b, size a = n -> size b = n -> size (bv_add a b) = n.
 Axiom bv_subt_size   : forall n a b, size a = n -> size b = n -> size (bv_subt a b) = n.
+Axiom bv_subt'_size  : forall n a b, size a = n -> size b = n -> size (bv_subt' a b) = n.
 Axiom bv_mult_size   : forall n a b, size a = n -> size b = n -> size (bv_mult a b) = n.
 Axiom bv_not_size    : forall n a, size a = n -> size (bv_not a) = n.
 Axiom bv_neg_size    : forall n a, size a = n -> size (bv_neg a) = n.
 Axiom bv_shl_size    : forall n a b, size a = n -> size b = n -> size (bv_shl a b) = n.
 Axiom bv_shr_size    : forall n a b, size a = n -> size b = n -> size (bv_shr a b) = n.
 Axiom bv_ashr_size   : forall n a b, size a = n -> size b = n -> size (bv_ashr a b) = n.
+Axiom bv_ashr_a_size : forall n a b, size a = n -> size b = n -> size (bv_ashr_a a b) = n.
 Axiom bv_extr_size   : forall i n0 n1 a, size a = n1 -> size (@bv_extr i n0 n1 a) = n0.
 
 (*
@@ -266,6 +280,14 @@ Axiom bv_xor_assoc   : forall n a b c, size a = n -> size b = n -> size c = n ->
 Axiom bv_add_assoc   : forall n a b c, size a = n -> size b = n -> size c = n -> 
                                     (bv_add a (bv_add b c)) = (bv_add (bv_add a b) c).
 Axiom bv_not_involutive: forall a, bv_not (bv_not a) = a.
+
+(** for invertibility conditions *)
+Axiom bv_add_subst_opp:  forall n a b, (size a) = n -> (size b) = n -> (bv_add (bv_subt' a b) b) = a.
+Axiom bv_ult_nat: forall a b, (size a) =? (size b) = true -> (bv_ult a b) = (bv2nat_a a <? bv2nat_a b)%nat.
+(* Axiom inv_bvadd: forall (n : N) (s t : bitvector), 
+  (size s) = n -> (size t) = n -> iff 
+  (exists (x : bitvector) (p: size x = n), ((bv_add x s) = t))
+  True. *)
 
 End RAWBITVECTOR.
 
@@ -322,6 +344,9 @@ Module RAW2BITVECTOR (M:RAWBITVECTOR) <: BITVECTOR.
   Definition bv_subt n (bv1 bv2:bitvector n) : bitvector n :=
     @MkBitvector n (M.bv_subt bv1 bv2) (M.bv_subt_size (wf bv1) (wf bv2)).
 
+  Definition bv_subt' n (bv1 bv2:bitvector n) : bitvector n :=
+    @MkBitvector n (M.bv_subt' bv1 bv2) (M.bv_subt'_size (wf bv1) (wf bv2)).
+
   Definition bv_mult n (bv1 bv2:bitvector n) : bitvector n :=
     @MkBitvector n (M.bv_mult bv1 bv2) (M.bv_mult_size (wf bv1) (wf bv2)).
 
@@ -335,6 +360,8 @@ Module RAW2BITVECTOR (M:RAWBITVECTOR) <: BITVECTOR.
   Definition bv_ugt n (bv1 bv2:bitvector n) : bool := M.bv_ugt bv1 bv2.
 
   Definition bv_ule n (bv1 bv2:bitvector n) : bool := M.bv_ule bv1 bv2. 
+
+  Definition bv2nat_a n (bv1: bitvector n) : nat := M.bv2nat_a bv1.
 
   Definition bv_not n (bv1: bitvector n) : bitvector n :=
     @MkBitvector n (M.bv_not bv1) (M.bv_not_size (wf bv1)).
@@ -368,6 +395,9 @@ Module RAW2BITVECTOR (M:RAWBITVECTOR) <: BITVECTOR.
   Definition bv_ashr n (bv1 bv2:bitvector n) : bitvector n :=
     @MkBitvector n (M.bv_ashr bv1 bv2) (M.bv_ashr_size (wf bv1) (wf bv2)).
 
+  Definition bv_ashr_a n (bv1 bv2:bitvector n) : bitvector n :=
+    @MkBitvector n (M.bv_ashr_a bv1 bv2) (M.bv_ashr_a_size (wf bv1) (wf bv2)).
+
   Lemma bits_size n (bv:bitvector n) : List.length (bits bv) = N.to_nat n.
   Proof. unfold bits. now rewrite M.bits_size, wf. Qed.
 
@@ -380,6 +410,30 @@ Module RAW2BITVECTOR (M:RAWBITVECTOR) <: BITVECTOR.
     - intros. case a in *. case b in *. simpl in *.
       now inversion H. (* now intros ->. *)
   Qed.
+
+  Lemma bv_exists: forall n (P: M.bitvector -> Prop),
+  (exists (x: bitvector n), P (bv x)) <-> (exists x: M.bitvector, M.size x = n /\ P x).
+  Proof.
+    split; intros.
+    destruct H as (x, p).
+    exists (bv x). split.
+    apply (wf x). easy.
+    destruct H as (x, (wf, p)). cbn.
+    exists (@MkBitvector n x wf). now simpl.
+  Qed.
+
+  Lemma bv_existsn: forall n (P: bitvector n -> Prop),
+  (exists (x: bitvector n), P x) <->
+  (exists (x: M.bitvector) (p: M.size x = n), P (@MkBitvector n x p)).
+  Proof.
+    split; intros.
+    destruct H as (x, p).
+    exists (bv x). exists (wf x).
+    destruct x. cbn in *. easy.
+    destruct H as (x, (wf, p)). cbn.
+    exists (@MkBitvector n x wf). now simpl.
+  Qed.
+
 
   Lemma bv_eq_refl n (a : bitvector n) : bv_eq a a = true.
   Proof.
@@ -502,6 +556,40 @@ Module RAW2BITVECTOR (M:RAWBITVECTOR) <: BITVECTOR.
        apply (@M.bv_not_involutive a); now rewrite wf.
   Qed.
 
+(** for invertibility conditions *)
+ Lemma bv_add_subst_opp: forall n (a b: bitvector n), bv_eq (bv_add (bv_subt' a b) b) a = true.
+ Proof. intros n a b. unfold bv_eq.
+         rewrite M.bv_eq_reflect. simpl. 
+         erewrite M.bv_add_subst_opp;try easy.
+         now rewrite !wf.
+  Qed.
+
+Lemma bv_ult_nat: forall n (a b: bitvector n), (bv_ult a b) = (bv2nat_a a <? bv2nat_a b)%nat.
+ Proof. intros n a b.
+         unfold bv2nat_a, bv_ult.
+         erewrite M.bv_ult_nat. easy.
+         now rewrite !wf, N.eqb_refl.
+  Qed.
+
+(*  Lemma inv_bvadd: forall (n : N), forall (s t : bitvector n), 
+  iff (exists (x : bitvector n), (bv_add x s = t)) True.
+ Proof. intros n a b.
+         unfold bv_eq. simpl.
+         rewrite bv_existsn. 
+         unfold bv_add. simpl.
+         destruct a as (a, wfa). cbn.
+         destruct b as (b, wfb). cbn. 
+ 
+         specialize (@bv_exists n); intros.
+         specialize (bv_exists .
+         unfold bv_add. simpl. destruct a, b. cbn.
+         rewrite M.inv_bvadd.
+         destruct a, b.
+         destruct a, b. simpl. 
+         unfold bv_add. cbn. erewrite M.inv_bvadd. easy.
+         
+  
+   *)
 
 End RAW2BITVECTOR.
 
@@ -4969,6 +5057,18 @@ Proof.
   now apply (f_equal (N.to_nat)) in H2; rewrite Nat2N.id in H2.
   Qed.
 
+
+Lemma bv_ashr_a_size n a b : size a = n -> size b = n -> size (bv_ashr_a a b) = n.
+Proof.
+  unfold bv_ashr_a. intros H1 H2. rewrite H1, H2.
+  rewrite N.eqb_compare. rewrite N.compare_refl.
+  unfold size in *. rewrite <- (@length_ashr_aux_a a b (nat_of_N n)).
+  now rewrite N2Nat.id. 
+  now apply (f_equal (N.to_nat)) in H1; rewrite Nat2N.id in H1.
+  now apply (f_equal (N.to_nat)) in H2; rewrite Nat2N.id in H2.
+  Qed.
+
+
 Lemma ashr_shr_false: forall a n, ashr_n_bits_a a n false = shr_n_bits_a a n.
 Proof. intro a.
        induction a; intros.
@@ -5392,11 +5492,19 @@ Proof. intro a.
                       @Coq.Arith.PeanoNat.Nat.lt_succ_r, @Coq.PArith.Pnat.Pos2Nat.inj_1) (@Coq.Init.Peano.lt).
 Qed.
 
+(* Axiom bv_ult_nat: forall n a b, (size a) = n -> (size b) = n -> 
+  (bv_ult a b) = (bv2nat_a a <? bv2nat_a b)%nat. *)
+
+
 Lemma bv_ult_nat: forall a b,
-    ((length a)%nat =? (length b)%nat)%nat = true ->
+    ((size a) =? (size b)) = true ->
     bv_ult a b = (((bv2nat_a a)%nat <? (bv2nat_a b)%nat))%nat.
-Proof. intros. unfold bv_ult, size in *.
-         rewrite Nat.eqb_eq in H. rewrite H, N.eqb_refl.
+Proof. intros a b H0. unfold bv_ult, size in *.
+        rewrite H0.
+        assert (H: length a = length b).
+        Reconstr.rcrush (@Coq.setoid_ring.InitialRing.Neqb_ok, 
+          @Coq.NArith.Nnat.Nat2N.id) (@RAWBITVECTOR_LIST.bitvector).
+        clear H0.
          unfold bv2nat_a, list2nat_be_a, ult_list.
          revert b H.
          induction a using rev_ind; intros.
@@ -6230,6 +6338,7 @@ Proof. intros.
             (@RAWBITVECTOR_LIST.bitvector).
 Qed.
 
+
 End RAWBITVECTOR_LIST.
 
 Module BITVECTOR_LIST <: BITVECTOR.
@@ -6242,6 +6351,7 @@ Module BITVECTOR_LIST <: BITVECTOR.
   Notation "'b|1'" := [true] (at level 70): bv_scope.
   Notation "# x |" := (@of_bits x) (no associativity, at level 1, format "# x |"): bv_scope.
   Notation "v @ p" := (bitOf p v) (at level 1, format "v @ p ") : bv_scope.
+
 
 End BITVECTOR_LIST.
 
