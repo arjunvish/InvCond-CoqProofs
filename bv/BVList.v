@@ -6298,7 +6298,6 @@ Proof.
     specialize (@mult_lt_compat_l lt_0_2).
     pose proof (@Nat.pow_succ_r 2 n (@Nat.le_0_l n)) as pow_succ_r.
     rewrite <- pow_succ_r in mult_lt_compat_l.
-    Search ((_ < _)%nat -> (_ + _ < _ + _)%nat).
 Admitted.
 
 Lemma lte_n_2pownminus1 : forall (n : nat), (n > 0)%nat -> (n < 2^(n-1))%nat.
@@ -6318,16 +6317,6 @@ Proof.
     - pose proof (@Nat.lt_succ_l (n) (length b) Hlt) as HltnB.
       specialize (@IHn HltnB). 
       pose proof (@skip1 n (mk_list_false (length b)) false) as skipn1.
-Admitted.
-
-Lemma skipn_b_zeros_2 : forall (b : bitvector), lt (list2nat_be_a b) (length b) ->
-  skipn (list2nat_be_a b) b = mk_list_false ((length b) - (list2nat_be_a b)).
-Proof.
-  intros b lt_B_lenb. unfold list2nat_be_a in *.
-  pose proof skipn_b_zeros_aux as shrink_b. specialize (@shrink_b b lt_B_lenb).
-  pose proof firstn_skipn as firstn_skipn. 
-  specialize (@firstn_skipn bool (N.to_nat (list2N b)) b).
-  unfold list2N in shrink_b at 1.
 Admitted.
 
 Lemma skipn_bvnot : forall (b : bitvector), lt (list2nat_be_a b) (length b) -> 
