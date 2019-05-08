@@ -4621,6 +4621,14 @@ Proof.
   + rewrite (@ule_list_big_endian_refl (a :: l)). easy.
 Qed.
 
+Lemma bv_ule_refl : forall (b : bitvector), bv_ule b b = true.
+Proof.
+  intros. unfold bv_ule. pose proof (@eqb_refl (size b)).
+  rewrite H. unfold ule_list. induction (rev b).
+  + easy.
+  + now rewrite (@ule_list_big_endian_refl (a :: l)).
+Qed.
+
 
 (* firstn n x <= firstn n 1 *)
 
@@ -4809,6 +4817,93 @@ Proof.
     - intros. apply H2 in H3. rewrite H3. easy.
     - intros. rewrite H3 in H. now contradict H.
   + intros. rewrite H0 in H. now contradict H.
+Qed.
+
+Lemma bv_ule_pre_append : forall (x y z : bitvector), bv_ule x y = true ->
+              bv_ule (z ++ x) (z ++ y) = true.
+Proof.
+  intros. unfold bv_ule in *. case_eq (size x =? size y).
+  + intros. rewrite H0 in H. apply Neqb_ok in H0.
+    unfold size in H0. apply Nat2N.inj in H0.
+    pose proof (@preappend_length x y z). apply H1 in H0. rewrite <- Nat2N.id in H0 at 1.
+    rewrite <- Nat2N.id in H0. apply N2Nat.inj in H0.
+    unfold size. apply eqb_N in H0. rewrite H0. unfold ule_listP in *.
+    unfold ule_list in *.
+    assert (forall (x y z : bitvector), 
+      ule_list_big_endian (rev x) (rev y) = true -> 
+      ule_list_big_endian (rev (z ++ x)) (rev (z ++ y)) = true).
+    { apply ule_list_big_endian_rev_app. }
+    specialize (@H2 x y z). case_eq (ule_list_big_endian (rev x) (rev y)).
+    - intros. apply H2 in H3. rewrite H3. easy.
+    - intros. rewrite H3 in H. now contradict H.
+  + intros. rewrite H0 in H. now contradict H.
+Qed.
+
+
+(* x <= y -> x ++ z <= y ++ z *)
+Lemma postappend_length : forall (x y z : bitvector), length x = length y ->
+            length (x ++ z) = length (y ++ z).
+Proof.
+  induction x, y.
+  + easy.
+  + intros. now contradict H. 
+  + intros. now contradict H.
+  + intros. specialize (@IHx y z). simpl in H. apply eq_add_S in H.
+    specialize (@IHx H). simpl. apply eq_S. apply IHx. 
+Qed.
+
+Lemma app_ule_list_big_endian : forall (x y z : bitvector), 
+  ule_list_big_endian x y = true -> ule_list_big_endian (z ++ x) (z ++ y) = true.
+Proof.
+  induction z; intros Hxy.
+  + easy. 
+  + specialize (@IHz Hxy). rewrite <- app_comm_cons. rewrite <- app_comm_cons.
+    apply cons_disjunct_ule_list_big_endian. 
+    rewrite orb_true_iff. right. rewrite andb_true_iff. split.
+    - apply eqb_reflx.
+    - apply IHz.
+Qed.
+
+Lemma rev_app_ule_list_big_endian : forall (x y z : bitvector),
+  ule_list_big_endian (rev x) (rev y) = true -> 
+  ule_list_big_endian (rev (x ++ z)) (rev (y ++ z)) = true.
+Proof.
+  intros  x y z ule_rx_ry. rewrite rev_app_distr. rewrite rev_app_distr.
+  apply app_ule_list_big_endian. apply ule_rx_ry.
+Qed.
+
+Lemma bv_uleP_post_append : forall (x y z : bitvector), bv_uleP x y -> 
+  bv_uleP (x ++ z) (y ++ z).
+Proof.
+  intros x y z Hlexy. unfold bv_uleP in *. case_eq (size x =? size y).
+  + intros Hxy. rewrite Hxy in Hlexy. apply Neqb_ok in Hxy.
+    unfold size in Hxy. apply Nat2N.inj in Hxy.
+    pose proof (@postappend_length x y z) as app_len. apply app_len in Hxy.
+    rewrite <- Nat2N.id in Hxy at 1. rewrite <- Nat2N.id in Hxy.
+    apply N2Nat.inj in Hxy. unfold size. apply eqb_N in Hxy. rewrite Hxy.
+    unfold ule_listP in *. unfold ule_list in *.
+    pose proof (@rev_app_ule_list_big_endian x y z) as rev_app.
+    case_eq (ule_list_big_endian (rev x) (rev y)).
+    - intros. apply rev_app in H. rewrite H. easy.
+    - intros. rewrite H in Hlexy. now contradict Hlexy.
+  + intros Hxy. rewrite Hxy in Hlexy. now contradict Hlexy.
+Qed.
+
+Lemma bv_ule_post_append : forall (x y z : bitvector), bv_ule x y = true -> 
+  bv_ule (x ++ z) (y ++ z) = true.
+Proof.
+  intros x y z Hlexy. unfold bv_ule in *. case_eq (size x =? size y).
+  + intros Hxy. rewrite Hxy in Hlexy. apply Neqb_ok in Hxy.
+    unfold size in Hxy. apply Nat2N.inj in Hxy.
+    pose proof (@postappend_length x y z) as app_len. apply app_len in Hxy.
+    rewrite <- Nat2N.id in Hxy at 1. rewrite <- Nat2N.id in Hxy.
+    apply N2Nat.inj in Hxy. unfold size. apply eqb_N in Hxy. rewrite Hxy.
+    unfold ule_listP in *. unfold ule_list in *.
+    pose proof (@rev_app_ule_list_big_endian x y z) as rev_app.
+    case_eq (ule_list_big_endian (rev x) (rev y)).
+    - intros. apply rev_app in H. rewrite H. easy.
+    - intros. rewrite H in Hlexy. now contradict Hlexy.
+  + intros Hxy. rewrite Hxy in Hlexy. now contradict Hlexy.
 Qed.
 
 

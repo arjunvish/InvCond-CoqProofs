@@ -2563,6 +2563,14 @@ Proof.
   + rewrite (@ule_list_big_endian_refl (a :: l)). easy.
 Qed.
 
+Lemma bv_ule_refl : forall (b : bitvector), bv_ule b b = true.
+Proof.
+  intros. unfold bv_ule. pose proof (@eqb_refl (size b)).
+  rewrite H. unfold ule_list. induction (rev b).
+  + easy.
+  + now rewrite (@ule_list_big_endian_refl (a :: l)).
+Qed.
+
 
 (* forall x y, x < y => x != y *)
 (* Unsigned less than *)
@@ -3349,7 +3357,6 @@ Proof.
   intros. pose proof (@bv_uleP_1_size x). unfold size in H.
   rewrite Nat2N.id in H. apply H.
 Qed.
-
 
 
 (** bitvector ult/slt *)
@@ -4470,6 +4477,27 @@ Proof.
   + intros. rewrite H0 in H. now contradict H.
 Qed.
 
+Lemma bv_ule_pre_append : forall (x y z : bitvector), bv_ule x y = true ->
+              bv_ule (z ++ x) (z ++ y) = true.
+Proof.
+  intros. unfold bv_ule in *. case_eq (size x =? size y).
+  + intros. rewrite H0 in H. apply Neqb_ok in H0.
+    unfold size in H0. apply Nat2N.inj in H0.
+    pose proof (@preappend_length x y z). apply H1 in H0. rewrite <- Nat2N.id in H0 at 1.
+    rewrite <- Nat2N.id in H0. apply N2Nat.inj in H0.
+    unfold size. apply eqb_N in H0. rewrite H0. unfold ule_listP in *.
+    unfold ule_list in *.
+    assert (forall (x y z : bitvector), 
+      ule_list_big_endian (rev x) (rev y) = true -> 
+      ule_list_big_endian (rev (z ++ x)) (rev (z ++ y)) = true).
+    { apply ule_list_big_endian_rev_app. }
+    specialize (@H2 x y z). case_eq (ule_list_big_endian (rev x) (rev y)).
+    - intros. apply H2 in H3. rewrite H3. easy.
+    - intros. rewrite H3 in H. now contradict H.
+  + intros. rewrite H0 in H. now contradict H.
+Qed.
+
+
 
 (* x <= y -> x ++ z <= y ++ z *)
 Lemma postappend_length : forall (x y z : bitvector), length x = length y ->
@@ -4520,6 +4548,22 @@ Proof.
   + intros Hxy. rewrite Hxy in Hlexy. now contradict Hlexy.
 Qed.
 
+Lemma bv_ule_post_append : forall (x y z : bitvector), bv_ule x y = true -> 
+  bv_ule (x ++ z) (y ++ z) = true.
+Proof.
+  intros x y z Hlexy. unfold bv_ule in *. case_eq (size x =? size y).
+  + intros Hxy. rewrite Hxy in Hlexy. apply Neqb_ok in Hxy.
+    unfold size in Hxy. apply Nat2N.inj in Hxy.
+    pose proof (@postappend_length x y z) as app_len. apply app_len in Hxy.
+    rewrite <- Nat2N.id in Hxy at 1. rewrite <- Nat2N.id in Hxy.
+    apply N2Nat.inj in Hxy. unfold size. apply eqb_N in Hxy. rewrite Hxy.
+    unfold ule_listP in *. unfold ule_list in *.
+    pose proof (@rev_app_ule_list_big_endian x y z) as rev_app.
+    case_eq (ule_list_big_endian (rev x) (rev y)).
+    - intros. apply rev_app in H. rewrite H. easy.
+    - intros. rewrite H in Hlexy. now contradict Hlexy.
+  + intros Hxy. rewrite Hxy in Hlexy. now contradict Hlexy.
+Qed.
 
 (* x << s <= 1 << s *)
 
@@ -6329,9 +6373,9 @@ Proof.
   rewrite skipn_bv_not in skipn_b_zeros. apply skipn_b_zeros.
 Qed.
 
-Lemma bv_uleP_shr_a_neg : forall (a b : bitvector), size a = size b ->
+Lemma bv_ule_shr_a_neg : forall (a b : bitvector), size a = size b ->
   lt (list2nat_be_a b) (length a) ->
-  bv_uleP (bv_shr_a a b) (bv_shr_a (bv_not b) b).
+  bv_ule (bv_shr_a a b) (bv_shr_a (bv_not b) b) = true.
 Proof.
   intros a b Hab lt_b_lena.
   unfold bv_shr_a. rewrite Hab. rewrite eqb_refl.
@@ -6346,7 +6390,7 @@ Proof.
   rewrite Nat2N.id in size_bvnot_length. rewrite Nat2N.id in size_bvnot_length.
   case_eq ((list2nat_be_a b <? length a)%nat); intros.
   + rewrite Hab_length in H. rewrite <- size_bvnot_length in H.
-    rewrite H. pose proof bv_uleP_pre_append. apply bv_uleP_post_append.
+    rewrite H. pose proof bv_uleP_pre_append. apply bv_ule_post_append.
     assert (skipn_bvnot : lt (list2nat_be_a b) (length b) -> 
             skipn (list2nat_be_a b) (bv_not b) = 
             mk_list_true ((length b) - list2nat_be_a b)).
@@ -6355,11 +6399,11 @@ Proof.
     rewrite skipn_bvnot. 
     pose proof (@length_skipn (list2nat_be_a b) a) as length_skipn.
     rewrite Hab_length in length_skipn. 
-    pose proof (@bv_uleP_1_length (skipn (list2nat_be_a b) a)) as bv_uleP_1.
-    rewrite <- length_skipn. apply bv_uleP_1.
+    pose proof (@bv_uleP_1_length (skipn (list2nat_be_a b) a)) as bv_ule_1.
+    rewrite <- bv_ule_B2P in bv_ule_1. rewrite <- length_skipn. apply bv_ule_1.
   + rewrite Hab_length in H. rewrite <- size_bvnot_length in H.
     rewrite H. rewrite Hab_length. rewrite <- size_bvnot_length.
-    apply bv_uleP_refl.
+    apply bv_ule_refl.
 Admitted.
  (* Prove: ~s has S leading 1s, where S = BV2NAT(s).
          Then, ~s >> S has S leading 0s and (len(s) - S) trailings 1s.
