@@ -17,6 +17,9 @@
 Require Import List Bool NArith Psatz (*Int63*) ZArith Nnat.
 Require Import Lia.
 Require Import Coq.Structures.Equalities.
+Require Import ClassicalFacts.
+Require Import Coq.Logic.Classical_Prop.
+Require Import Coq.Reals.ArithProp.
 (*Require Import Misc.*)
 Import ListNotations.
 Local Open Scope list_scope.
@@ -5414,6 +5417,93 @@ Proof.
   unfold size in Hss. rewrite Hss.
   pose proof (@eqb_refl n). rewrite H.
   apply (@bv_shl_n_bits_a_1_leq n x s Hx Hs).
+Qed.
+
+
+(* 0 << b = 0 *)
+
+Lemma length_cons : forall (t : list bool) (h : bool) , 
+  length (h :: t) = S (length t).
+Proof.
+  induction t; easy.
+Qed.
+
+Lemma firstn_mk_list_false : forall (x y: nat), (x < y)%nat ->
+  firstn x (mk_list_false y) = mk_list_false x.
+Proof.
+  intros x y ltxy. induction x.
+  + easy.
+  + induction y.
+    - easy.
+    - simpl. pose proof ltxy as ltxy2. apply lt_S_n in ltxy2.
+      pose proof ltxy2 as ltxSy. apply Nat.lt_lt_succ_r in ltxSy.
+      apply IHx in ltxSy. rewrite <- ltxSy.
+      rewrite mk_list_false_app. rewrite firstn_app. rewrite length_mk_list_false.
+      assert (forall (n m : nat), (n < m)%nat -> Nat.sub n m = O).
+      { induction n.
+        + easy.
+        + induction m.
+          - intros. now contradict H.
+          - intros. simpl. apply lt_S_n in H. specialize (@IHn m H). apply IHn.
+      }
+      specialize (@H x y ltxy2). rewrite H. simpl. rewrite app_nil_r. easy.
+Qed.
+
+
+Lemma succ_minus_succ : forall x y : nat, (y < x)%nat -> S (x - S y) = (x - y)%nat.
+Proof.
+  intros x y ltyx.
+  pose proof (@Nat.sub_succ_r x y). rewrite H.
+  pose proof (@Nat.lt_succ_pred O (x - y)).
+  Search ((0 < _ - _)%nat). pose proof lt_minus_O_lt.
+  pose proof (@lt_minus_O_lt y x ltyx). now apply H0 in H1.
+Qed.
+
+Lemma mk_list_false_app_minus : forall x y : nat, (y < x)%nat -> 
+  mk_list_false (y) ++ mk_list_false (x - y) = mk_list_false (x).
+Proof.
+  intros x y ltyx.
+  induction y.
+  + simpl. now rewrite Nat.sub_0_r.
+  + pose proof ltyx as ltyx2. apply Nat.lt_succ_l in ltyx2.
+    specialize (@IHy ltyx2). rewrite mk_list_false_app.
+    pose proof (@succ_minus_succ x y ltyx2).
+    pose proof mk_list_false_app. rewrite <- app_assoc. simpl.
+    assert (false :: mk_list_false (x - S y) = mk_list_false (S (x - S y))) by easy.
+    rewrite H1. rewrite H. apply IHy.
+Qed.
+
+Lemma bvshl_zeros : forall (b : bitvector), 
+                    bv_shl (zeros (size b)) b = zeros (size b).
+Proof.
+  intros b. induction b.
+  + easy.
+  + rewrite bv_shl_eq in *. unfold bv_shl_a in *.
+    rewrite zeros_size in *. rewrite eqb_refl in *.
+    unfold shl_n_bits_a in *. unfold size in *.
+    unfold zeros in *. rewrite Nat2N.id in *.
+    case_eq ((list2nat_be_a (a :: b) <? length (mk_list_false (length (a :: b))))%nat);
+        intros comp_b_lenb.
+    - pose proof firstn_mk_list_false as firstn_mlf.
+      destruct (@gt_0_eq (list2nat_be_a (a :: b))).
+      * rewrite length_mk_list_false.
+        specialize (@firstn_mlf (length (a :: b) - list2nat_be_a (a :: b))%nat 
+                                (length (a :: b))).
+        assert (lt : (length (a :: b) - list2nat_be_a (a :: b) 
+                      < length (a :: b))%nat).
+        { pose proof Nat.sub_lt. rewrite Nat.ltb_lt in comp_b_lenb.
+          apply Nat.lt_le_incl in comp_b_lenb.
+          specialize (@H0 (length (mk_list_false (length (a :: b)))) 
+                          (list2nat_be_a (a :: b)) comp_b_lenb).
+          rewrite length_mk_list_false in H0. apply H0. easy. }
+        specialize (@firstn_mlf lt). rewrite firstn_mlf. apply mk_list_false_app_minus.
+        rewrite length_mk_list_false in comp_b_lenb. rewrite Nat.ltb_lt in comp_b_lenb.
+        apply comp_b_lenb.
+      * rewrite <- H. rewrite Nat.sub_0_r. rewrite length_mk_list_false.
+        assert (mk_list_false 0 = []) by easy. rewrite H0. rewrite app_nil_l.
+        pose proof (@firstn_all bool ((mk_list_false (length (a :: b))))).
+        rewrite length_mk_list_false in H1. apply H1.
+    - now rewrite length_mk_list_false.
 Qed.
 
 

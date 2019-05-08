@@ -1196,6 +1196,14 @@ Theorem bvshl_neq_ltr : forall (n : N), forall (s t : bitvector),
       ->
     (exists (x : bitvector), (size x = n) /\ ~(bv_shl x s = t)).
 Proof.
+  intros n s t Hs Ht H. destruct H.
+  + exists (zeros n). split.
+    - apply zeros_size.
+    - pose proof (@bvshl_zeros s) as bvshl_zeros. rewrite Hs in bvshl_zeros.
+      rewrite bvshl_zeros. rewrite Ht in H. unfold not in *. 
+      intros t_0. rewrite t_0 in H. 
+      now specialize (@H (@eq_refl bitvector t)).
+  + exists (bv_not (bv_shr t s)). admit.
 Admitted.
 
 (* ((s <u t \/ s >=s 0) /\ t != 0) => (exists x, (s >>a x) <u t) *)
