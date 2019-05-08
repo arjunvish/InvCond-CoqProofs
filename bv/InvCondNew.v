@@ -1223,4 +1223,29 @@ Theorem bvshr_ugt_rtl : forall (n : N), forall (s t : bitvector),
           ->
     (bv_ult t (bv_shr (bv_not s) s) = true).
 Proof.
+  intros n s t Hs Ht. intros. destruct H as (x, (Hx, ugt_shr_t)). 
+  apply bv_ugt_bv_ult in ugt_shr_t. rewrite bv_shr_eq in *.
+  assert (ule_shr_shrnot : forall (a b : bitvector), size a = size b ->
+            lt (list2nat_be_a b) (length a) ->
+            bv_ule (bv_shr_a a b) (bv_shr_a (bv_not b) b) = true).
+  { admit. (* use bv_ule_shr_a_neg once its done *)}
+  assert (lt_s_lenx : list2nat_be_a s < length x).
+  { apply not_ge. unfold not. intros ge_s_lenx. unfold bv_shr_a in ugt_shr_t. 
+    pose proof Hs as Hss. rewrite <- Hx in Hss. rewrite <- Hss in ugt_shr_t.
+    assert (Hs_refl : (size s =? size s)%N = true). 
+    { apply NBoolEqualityFacts.eqb_refl. }
+    rewrite Hs_refl in ugt_shr_t. unfold shr_n_bits_a in ugt_shr_t. 
+    assert (not_le_s_lenx : (list2nat_be_a s <? length x) = false).
+    { rewrite Nat.ltb_ge. apply ge_s_lenx. } 
+    rewrite not_le_s_lenx in ugt_shr_t. 
+    pose proof not_bv_ult_x_zero as not_lt. unfold zeros, size, not in not_lt.
+    specialize (@not_lt t). rewrite (@Nat2N.id (length t)) in not_lt.
+    pose proof Hx as lenxt. rewrite <- Ht in lenxt. unfold size in lenxt.
+    apply Nat2N.inj in lenxt. rewrite lenxt in ugt_shr_t.
+    now rewrite not_lt in ugt_shr_t. 
+  }
+  rewrite <- Hs in Hx. specialize (@ule_shr_shrnot x s Hx lt_s_lenx). 
+  pose proof bv_ult_ule_list_trans as trans.
+  specialize (@trans t (bv_shr_a x s) (bv_shr_a (bv_not s) s) 
+                     ugt_shr_t ule_shr_shrnot). apply trans.
 Admitted.
