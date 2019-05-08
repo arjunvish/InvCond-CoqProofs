@@ -1211,8 +1211,15 @@ Theorem bvashr_ult2_ltr : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> 
     (((bv_ult s t = true) \/ ~(bv_slt s (zeros (size s)) = true)) /\ ~(t = zeros (size t)))
           ->
-    (exists (x : bitvector), (size x = n) /\ (bv_ult (bv_ashr s x) t = true)).
+    (exists (x : bitvector), (size x = n) /\ (bv_ult (bv_ashr_a s x) t = true)).
 Proof.
+  intros n s t Hs Ht H. destruct H as (H, t0).
+  destruct H.
+  + exists (zeros (n)). split.
+    - apply zeros_size.
+    - pose proof (@bvashr_zero s) as bvashr_zero. rewrite Hs in bvashr_zero. 
+      rewrite bvashr_zero. apply H.
+  + admit.
 Admitted.
 
 (* ((s <s (s >> !t)) \/ (t <u s)) => (exists x, (s >>a x) >u t) *)

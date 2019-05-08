@@ -6504,6 +6504,24 @@ Proof.
 Qed.
 
 
+(* b >>a 0 = b *)
+
+Lemma bvashr_zero : forall (b : bitvector), bv_ashr_a b (zeros (size b)) = b.
+Proof. 
+  intros b. unfold bv_ashr_a. rewrite zeros_size. 
+  rewrite NBoolEqualityFacts.eqb_refl. unfold ashr_aux_a.
+  unfold ashr_n_bits_a. unfold size, zeros. rewrite Nat2N.id.
+  unfold list2nat_be_a. rewrite list2N_mk_list_false. simpl.
+  case_eq ((0 <? length b)%nat); intros.
+  + case_eq (eqb (last b false) false); intros;
+    simpl; now rewrite app_nil_r.
+  + case_eq (eqb (last b false) false); intros;
+    rewrite Nat.ltb_ge in H; apply le_n_0_eq in H;
+    pose proof (@empty_list_length bool b); symmetry in H;
+    apply H1 in H; rewrite H; easy.
+Qed.
+
+
 End RAWBITVECTOR_LIST.
 
 Module BITVECTOR_LIST <: BITVECTOR.
