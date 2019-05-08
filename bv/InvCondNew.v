@@ -1198,7 +1198,7 @@ Theorem bvshl_neq_ltr : forall (n : N), forall (s t : bitvector),
 Proof.
 Admitted.
 
-(* ((s <u t \/ s >=s 0) /\ t != 0) <=> (exists x, (s >>a x) <u t) *)
+(* ((s <u t \/ s >=s 0) /\ t != 0) => (exists x, (s >>a x) <u t) *)
 Theorem bvashr_ult2_ltr : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> 
     (((bv_ult s t = true) \/ ~(bv_slt s (zeros (size s)) = true)) /\ ~(t = zeros (size t)))
@@ -1207,7 +1207,7 @@ Theorem bvashr_ult2_ltr : forall (n : N), forall (s t : bitvector),
 Proof.
 Admitted.
 
-(* ((s <s (s >> !t)) \/ (t <u s)) <=> (exists x, (s >>a x) >u t) *)
+(* ((s <s (s >> !t)) \/ (t <u s)) => (exists x, (s >>a x) >u t) *)
 Theorem bvashr_ugt2_ltr : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> 
     ((bv_slt s (bv_shr s (bv_not t)) = true) \/ (bv_ult t s = true))
