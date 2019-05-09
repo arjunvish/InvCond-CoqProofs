@@ -1274,33 +1274,6 @@ Proof.
       apply Bool.eqb_eq. rewrite H. easy.
 Qed.
 
-
-Theorem bvashr_ult2_ltr : forall (n : N), forall (s t : bitvector),
-  (size s) = n -> (size t) = n -> 
-    (((bv_ult s t = true) \/ (bv_slt s (zeros (size s)) = false)) /\ ~(t = zeros (size t)))
-          ->
-    (exists (x : bitvector), (size x = n) /\ (bv_ult (bv_ashr_a s x) t = true)).
-Proof.
-  intros n s t Hs Ht H. destruct H as (H, t0).
-  destruct H.
-  + exists (zeros (n)). split.
-    - apply zeros_size.
-    - pose proof (@bvashr_zero s) as bvashr_zero. rewrite Hs in bvashr_zero. 
-      rewrite bvashr_zero. apply H.
-  + assert (sign_s : (eqb (last s false) false) = true).
-    { pose proof (@bv_slt_false_zeros s). now apply H0 in H. }
-    pose proof (@last_mk_list_false (length s)) as sign_zeros.
-    unfold zeros, size in H. rewrite Nat2N.id in H.
-    pose proof (@bv_slt_ult_last_eq s (mk_list_false (length s)) false) as bvult.
-    apply eqb_prop in sign_s. rewrite sign_s, sign_zeros in bvult.
-    assert (f : false = false) by easy. specialize (@bvult f). 
-    rewrite bvult in H. exists (nat2bv (length s) (N.to_nat (N.size (size s)))). 
-    split.
-    - rewrite Hs. apply zeros_size.
-    -  
-Admitted.
-
-
 (* ((s <s (s >> !t)) \/ (t <u s)) => (exists x, (s >>a x) >u t) *)
 Theorem bvashr_ugt2_ltr : forall (n : N), forall (s t : bitvector),
   (size s) = n -> (size t) = n -> 
