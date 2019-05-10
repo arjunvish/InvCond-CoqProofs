@@ -6450,72 +6450,70 @@ Proof.
       intros Hxy. inversion Hxy. easy. 
 Qed.
 
-Lemma lt_n_2pown : forall (n : nat), (n < 2^n)%nat.
-Proof.
-  induction n.
-  + rewrite Nat.pow_0_r. apply Nat.lt_0_1.
-  + pose proof (@mult_lt_compat_l n (2 ^ n) 2 IHn) as mult_lt_compat_l.
-    assert (lt_0_2 : (0 < 2)%nat). { auto. }
-    specialize (@mult_lt_compat_l lt_0_2).
-    pose proof (@Nat.pow_succ_r 2 n (@Nat.le_0_l n)) as pow_succ_r.
-    rewrite <- pow_succ_r in mult_lt_compat_l.
-Admitted.
-
-Lemma lte_n_2pownminus1 : forall (n : nat), (n > 0)%nat -> (n < 2^(n-1))%nat.
-Proof.
-  induction n.
-  intros gt_n_0.
-  + now contradict gt_n_0.
-  + 
-Admitted. 
-
-(*
-Lemma firstn_mk_list_false : forall (x y: nat), (x < y)%nat ->
-  firstn x (mk_list_false y) = mk_list_false x.
-Proof.
-  intros x y ltxy. induction x.
-  + easy.
-  + induction y.
-    - easy.
-    - simpl. pose proof ltxy as ltxy2. apply lt_S_n in ltxy2.
-      pose proof ltxy2 as ltxSy. apply Nat.lt_lt_succ_r in ltxSy.
-      apply IHx in ltxSy. rewrite <- ltxSy.
-      rewrite mk_list_false_app. rewrite firstn_app. rewrite length_mk_list_false.
-      assert (forall (n m : nat), (n < m)%nat -> Nat.sub n m = O).
-      { induction n.
-        + easy.
-        + induction m.
-          - intros. now contradict H.
-          - intros. simpl. apply lt_S_n in H. specialize (@IHn m H). apply IHn.
-      }
-      specialize (@H x y ltxy2). rewrite H. simpl. rewrite app_nil_r. easy.
-Qed.
-*)
-Lemma skipn_mk_list_false : forall (x y: nat), (x < y)%nat -> 
+Lemma skipn_mk_list_false : forall (x y: nat), (x <= y)%nat -> 
   skipn x (mk_list_false y) = mk_list_false (y - x).
 Proof.
-(*  intros x y ltxy. induction x.
-  + rewrite skip0. now rewrite Nat.sub_0_r.
-  + pose proof ltxy as ltxy2. apply Nat.lt_succ_l in ltxy2.
-    specialize (@IHx ltxy2). induction y.
-    - easy.
-    - simpl. *)
-  intros x y ltxy. induction y.
-  + easy.
-  + pose proof ltxy as ltxy2. 
-Admitted.
+  induction x.
+  + intros y ltxy. rewrite skip0. now rewrite Nat.sub_0_r.
+  + intros y ltxy. induction y.
+    - easy. 
+    - simpl. apply Peano.le_S_n in ltxy. 
+      specialize (@IHx y ltxy). apply IHx.
+Qed.
+
+(*destruct (n_cases_all (list2nat_be_a b)).
+  + rewrite H. rewrite skip0. rewrite Nat.sub_0_r.
+    unfold list2nat_be_a in H. pose proof (@list2N_mk_list_false (length b)).
+    assert (Nat.eq (0%nat) (N.to_nat 0)) by easy.
+    rewrite H1 in H. apply N2Nat.inj in H. rewrite <- H0 in H. 
+    assert (forall (x y : list bool), list2N x = list2N y ->
+            x = y) by admit.
+    apply H2 in H. apply H.
+  + pose proof skipn_lt. Search mk_list_false.*)
+
+Lemma bv_ult_implies_0_leading_bits : forall (b x: bitvector) (n : nat), 
+      lt n (length b) -> lt (length x) (length b) ->
+      bv_ult (x ++ mk_list_false n) b = true -> 
+      skipn (list2nat_be_a b) b = mk_list_false ((length b) - (list2nat_be_a b)).
+Proof.
+  Admitted.
 
 Lemma skipn_b_zeros : forall (b : bitvector), lt (list2nat_be_a b) (length b) ->
   skipn (list2nat_be_a b) b = mk_list_false ((length b) - (list2nat_be_a b)).
 Proof.
   intros b Hlt. destruct (list_cases_all_false b).
-  + (* Try doing the b = 0 v !0 case split above so that that you 
-       can use the fact that s >> b = s when b = 0*)
-    rewrite H at 2. induction (list2nat_be_a b).
-    - simpl. now rewrite Nat.sub_0_r.
-    - pose proof (@Nat.lt_succ_l (n) (length b) Hlt) as HltnB.
-      specialize (@IHn HltnB). 
-      pose proof (@skip1 n (mk_list_false (length b)) false) as skipn1.
+  + apply Nat.lt_le_incl in Hlt. 
+    pose proof (@skipn_mk_list_false (list2nat_be_a b) (length b) Hlt).
+    rewrite H at 2. apply H0.
+  + pose proof H as neq_0. pose proof skipn_lt as skip_lt. 
+    apply gt0_nmk_list_false in neq_0. apply Nat.ltb_lt in neq_0. 
+    apply lt_0_neq in neq_0. pose proof Hlt as Hlt2. unfold list2nat_be_a in Hlt.
+    apply not_eq_sym in neq_0. apply Nat.ltb_lt in Hlt.
+    specialize (@skip_lt (N.to_nat (list2N b)) b neq_0 Hlt H).
+    pose proof (@bv_ult_nat 
+      (skipn (N.to_nat (list2N b)) b ++ mk_list_false (N.to_nat (list2N b)))
+      b) as lt_eq. unfold bv2nat_a in lt_eq. unfold list2nat_be_a in lt_eq.
+    assert (len : (size (skipn (N.to_nat (list2N b)) b ++ 
+                    mk_list_false (N.to_nat (list2N b))) =?
+         size b) = true).
+    { unfold size. apply eqb_N. apply Nat2N.inj_iff. 
+      pose proof (@length_skipn (N.to_nat (list2N b)) b).
+      rewrite app_length. rewrite H0. rewrite length_mk_list_false.
+      rewrite Nat.ltb_lt in Hlt. apply Nat.lt_le_incl in Hlt.
+      apply Nat.sub_add. apply Hlt. }
+    specialize (@lt_eq len).
+    rewrite <- lt_eq in skip_lt.
+    assert (forall (b x: bitvector) (n : nat), lt n (length b) -> 
+      lt (length x) (length b) ->
+      bv_ult (x ++ mk_list_false n) b = true -> 
+      skipn (list2nat_be_a b) b = mk_list_false ((length b) - (list2nat_be_a b))).
+    { admit. } 
+    assert (length (skipn (N.to_nat (list2N b)) b) < length b)%nat.
+    { rewrite length_skipn. pose proof Nat.sub_lt. apply H1.
+      rewrite Nat.ltb_lt in Hlt. apply Nat.lt_le_incl in Hlt. apply Hlt. 
+      apply not_eq_sym in neq_0. apply neq_0_lt in neq_0. apply neq_0. }
+    specialize (@H0 b (skipn (N.to_nat (list2N b)) b) (list2nat_be_a b) Hlt2 H1 skip_lt).
+    apply H0.
 Admitted.
 
 Lemma skipn_bvnot : forall (b : bitvector), lt (list2nat_be_a b) (length b) -> 

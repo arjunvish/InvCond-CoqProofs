@@ -1183,28 +1183,6 @@ Admitted.
 (*------------------------------------------------------------*)
 
 (*PxTP Goals: *)
-(* t != 0 or s <u size(s) => (exists x, x << s != t) *)
-Theorem bvshl_neq_ltr : forall (n : N), forall (s t : bitvector), 
-  (size s) = n -> (size t) = n -> 
-    (~(t = zeros (size t))
-     \/
-     ((bv_ult s (nat2bv 
-                  (N.to_nat (size s))
-                  (N.to_nat (size s)))))
-      =
-      true)
-      ->
-    (exists (x : bitvector), (size x = n) /\ ~(bv_shl x s = t)).
-Proof.
-  intros n s t Hs Ht H. destruct H.
-  + exists (zeros n). split.
-    - apply zeros_size.
-    - pose proof (@bvshl_zeros s) as bvshl_zeros. rewrite Hs in bvshl_zeros.
-      rewrite bvshl_zeros. rewrite Ht in H. unfold not in *. 
-      intros t_0. rewrite t_0 in H. 
-      now specialize (@H (@eq_refl bitvector t)).
-  + exists (bv_not (bv_shr t s)). admit.
-Admitted.
 
 (* ((s <u t \/ s >=s 0) /\ t != 0) => (exists x, (s >>a x) <u t) *)
 Theorem bvashr_ult2_ltr : forall (n : N), forall (s t : bitvector),
@@ -1494,4 +1472,27 @@ Proof.
   pose proof bv_ult_ule_list_trans as trans.
   specialize (@trans t (bv_shr_a x s) (bv_shr_a (bv_not s) s) 
                      ugt_shr_t ule_shr_shrnot). apply trans.
+Admitted.
+
+(* t != 0 or s <u size(s) => (exists x, x << s != t) *)
+Theorem bvshl_neq_ltr : forall (n : N), forall (s t : bitvector), 
+  (size s) = n -> (size t) = n -> 
+    (~(t = zeros (size t))
+     \/
+     ((bv_ult s (nat2bv 
+                  (N.to_nat (size s))
+                  (N.to_nat (size s)))))
+      =
+      true)
+      ->
+    (exists (x : bitvector), (size x = n) /\ ~(bv_shl x s = t)).
+Proof.
+  intros n s t Hs Ht H. destruct H.
+  + exists (zeros n). split.
+    - apply zeros_size.
+    - pose proof (@bvshl_zeros s) as bvshl_zeros. rewrite Hs in bvshl_zeros.
+      rewrite bvshl_zeros. rewrite Ht in H. unfold not in *. 
+      intros t_0. rewrite t_0 in H. 
+      now specialize (@H (@eq_refl bitvector t)).
+  + exists (bv_not (bv_shr t s)). admit.
 Admitted.
