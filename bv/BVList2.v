@@ -520,6 +520,40 @@ Proof. unfold bits, size. now rewrite Nat2N.id. Qed.
 Lemma of_bits_size l : N.to_nat (size (of_bits l)) = List.length l.
 Proof. unfold of_bits, size. now rewrite Nat2N.id. Qed.
 
+(* forall x : bitvector, size(x) >= 0 *)
+
+Theorem length_of_tail : forall (h : bool) (t : list bool), 
+ length (h :: t) = S (length t).
+  intros h t.
+Proof. 
+  induction t; reflexivity.
+Qed.
+
+Theorem non_empty_list_size : forall (h : bool) (t : list bool),
+          N.to_nat (size (h :: t)) = S (N.to_nat (size t)).
+Proof.
+  intros h t. induction t as [| h' t' IHt].
+    + reflexivity.
+    + unfold size in *. rewrite -> length_of_tail.
+      rewrite -> length_of_tail. rewrite -> Nat2N.id in *.
+      rewrite -> Nat2N.id. reflexivity.
+Qed.
+
+Theorem succ_gt_pred : forall (n : nat), (n >= 0)%nat -> (S n >= 0)%nat.
+Proof.
+  intros n. induction n as [| n' IHn].
+  + unfold ge. intros H. apply le_0_n.
+  + unfold ge. intros H. auto.
+Qed.
+
+Theorem bv_size_nonnegative : forall (x : bitvector), (N.to_nat(size x) >= 0)%nat.
+Proof.
+  intros x. induction x.
+  - auto.
+  - rewrite -> non_empty_list_size. unfold size in *. 
+    rewrite -> Nat2N.id in *. apply succ_gt_pred. apply IHx.
+  Qed.
+
 
 Fixpoint mk_list_false_acc (t: nat) (acc: list bool) : list bool :=
   match t with
@@ -1628,6 +1662,15 @@ Proof. intros n a b H0 H1. unfold bv_and, size, bits in *.
        rewrite not_list_or_and. reflexivity.
 Qed.
 
+Lemma bvdm: forall a b: bitvector, size a = size b ->
+   (bv_not (bv_and a b)) = (bv_or (bv_not a) (bv_not b)).
+Proof. intros. unfold bv_and, bv_or, bv_not.
+       rewrite H, N.eqb_refl.
+       unfold bits, size in *. 
+       rewrite !map_length, H, N.eqb_refl.
+       now rewrite not_list_and_or.
+Qed.
+
 
 
 
@@ -2106,7 +2149,6 @@ Qed.
 
 
 
-
 (* addition-subtraction *)
 
 
@@ -2237,6 +2279,15 @@ Proof. intros n a b H0 H1. unfold bv_add, bv_subt', add_list, size, bits in *.
   rewrite N.compare_refl.
   apply (@subt'_add_list a b n); easy.
   rewrite <- H0 in H1. now apply Nat2N.inj in H1.
+Qed.
+
+Theorem bvadd_U: forall (n : N),
+  forall (s t x: bitvector), (size s) = n /\ (size t) = n /\ (size x) = n ->
+  (bv_add x s) = t <-> (x = (bv_subt' t s)).
+Proof. intros n s t x (Hs, (Ht, Hx)).
+  split; intro A.
+  - rewrite <- A. symmetry. exact (@bv_subt'_add n x s Hx Hs).
+  - rewrite A. exact (bv_add_subst_opp Ht Hs).
 Qed.
 
 
@@ -3297,6 +3348,33 @@ Lemma list2N_N2List_eq: forall a, list2N (N2list a (N.to_nat a)) = a.
 Proof. intros. rewrite list2N_N2List_s. easy.
         specialize (size_gt (N.to_nat a)); intro HH.
         rewrite N2Nat.id in HH. easy.
+Qed.
+
+(* forall b, toNat(b) >= 0 *)
+Lemma bvgez: forall a: bitvector, (bv2nat_a a = 0%nat) \/ (bv2nat_a a > 0)%nat.
+Proof. intro a.
+       induction a.
+       - cbn. left. easy.
+       - case_eq a; intros.
+         + right. unfold bv2nat_a, list2nat_be_a.
+        	 Reconstr.rsimple (@Coq.Arith.Gt.gt_0_eq, @Coq.Arith.PeanoNat.Nat.add_0_l,
+           @Coq.NArith.Nnat.N2Nat.inj_succ_double) 
+          (@list2nat_be_a, 
+           @list2N).
+         + unfold bv2nat_a, list2nat_be_a. destruct IHa.
+           * left. 
+	           Reconstr.rblast (@Coq.NArith.Nnat.N2Nat.id, @list2N_N2List,
+               @Coq.Init.Peano.O_S, @Coq.NArith.Nnat.Nat2N.id) 
+              (@Coq.NArith.BinNatDef.N.of_nat, @list2nat_be_a, 
+               @bv2nat_a, @Coq.NArith.BinNatDef.N.double, 
+               @list2N).
+           * right. cbn. 
+	           Reconstr.rsimple (@Coq.NArith.Nnat.Nat2N.id, @Coq.PArith.Pnat.Pos2Nat.is_pos, 
+              @Coq.Arith.PeanoNat.Nat.lt_irrefl, @list2N_N2List)
+             (@list2nat_be_a, @Coq.NArith.BinNatDef.N.to_nat, 
+              @Coq.NArith.BinNatDef.N.of_nat,
+              @Coq.Init.Peano.gt, @Coq.NArith.BinNatDef.N.double,
+              @bv2nat_a).
 Qed.
 
 

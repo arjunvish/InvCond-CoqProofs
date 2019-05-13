@@ -6,108 +6,8 @@ Require Import List Bool NArith Psatz (*Int63*) ZArith Nnat.
 
 From Hammer Require Import Hammer Reconstr.
 
-(* Start Practice:
- forall x : bitvector, size(x) >= 0*)
 
-Theorem length_of_tail : forall (h : bool) (t : list bool), 
- length (h :: t) = S (length t).
-  intros h t.
-Proof. 
-  induction t; reflexivity.
-Qed.
 
-Theorem non_empty_list_size : forall (h : bool) (t : list bool),
-          N.to_nat (size (h :: t)) = S (N.to_nat (size t)).
-Proof.
-  intros h t. induction t as [| h' t' IHt].
-    + reflexivity.
-    + unfold size in *. rewrite -> length_of_tail.
-      rewrite -> length_of_tail. rewrite -> Nat2N.id in *.
-      rewrite -> Nat2N.id. reflexivity.
-Qed.
-
-Theorem succ_gt_pred : forall (n : nat), n >= 0 -> S n >= 0.
-Proof.
-  intros n. induction n as [| n' IHn].
-  + unfold ge. intros H. apply le_0_n.
-  + unfold ge. intros H. auto.
-Qed.
-
-Theorem bv_size_nonnegative : forall (x : bitvector), N.to_nat(size x) >= 0.
-Proof.
-  intros x. induction x.
-  - auto.
-  - rewrite -> non_empty_list_size. unfold size in *. 
-    rewrite -> Nat2N.id in *. apply succ_gt_pred. apply IHx.
-  Qed.
-
-Lemma bvgez: forall a: bitvector, (bv2nat_a a = 0) \/ (bv2nat_a a > 0).
-Proof. intro a.
-       induction a.
-       - cbn. left. easy.
-       - case_eq a; intros.
-         + right. unfold bv2nat_a, list2nat_be_a.
-        	 Reconstr.rsimple (@Coq.Arith.Gt.gt_0_eq, @Coq.Arith.PeanoNat.Nat.add_0_l,
-           @Coq.NArith.Nnat.N2Nat.inj_succ_double) 
-          (@BV.BVList.RAWBITVECTOR_LIST.list2nat_be_a, 
-           @BV.BVList.RAWBITVECTOR_LIST.list2N).
-         + unfold bv2nat_a, list2nat_be_a. destruct IHa.
-           * left. 
-	           Reconstr.rblast (@Coq.NArith.Nnat.N2Nat.id, @BV.BVList.RAWBITVECTOR_LIST.list2N_N2List,
-               @Coq.Init.Peano.O_S, @Coq.NArith.Nnat.Nat2N.id) 
-              (@Coq.NArith.BinNatDef.N.of_nat, @BV.BVList.RAWBITVECTOR_LIST.list2nat_be_a, 
-               @BV.BVList.RAWBITVECTOR_LIST.bv2nat_a, @Coq.NArith.BinNatDef.N.double, 
-               @BV.BVList.RAWBITVECTOR_LIST.list2N).
-           * right. cbn. 
-	           Reconstr.rsimple (@Coq.NArith.Nnat.Nat2N.id, @Coq.PArith.Pnat.Pos2Nat.is_pos, 
-              @Coq.Arith.PeanoNat.Nat.lt_irrefl, @BV.BVList.RAWBITVECTOR_LIST.list2N_N2List)
-             (@BV.BVList.RAWBITVECTOR_LIST.list2nat_be_a, @Coq.NArith.BinNatDef.N.to_nat, 
-              @Coq.NArith.BinNatDef.N.of_nat,
-              @Coq.Init.Peano.gt, @Coq.NArith.BinNatDef.N.double,
-              @BV.BVList.RAWBITVECTOR_LIST.bv2nat_a).
-Qed.
-
-(*
-Lemma bv_non_neg : forall b : bitvector,
- (zeros (size b) = b) \/ (bv_ultP (zeros (size b)) b).
-Proof.
-  intro a. induction a.
-  + left. easy.
-  + case_eq a.
-    - intros. unfold zeros in *. unfold size in *. 
-      rewrite Nat2N.id in *. destruct IHa.
-      * right. rewrite <- H0. admit.
-      * right. admit.
-    - intros. unfold zeros in *. unfold size in *. 
-      rewrite Nat2N.id in *. destruct IHa.
-      * left. assert (mk_list_false_succ : forall (h : bool) (t : list bool), 
-                (mk_list_false (length (h :: t)) = 
-                  (false :: (mk_list_false (length t))))). { admit. }
-        rewrite (@mk_list_false_succ false a0). rewrite -> H0. easy.  
-      * right. assert (mk_list_false_succ : forall (h : bool) (t : list bool), 
-                (mk_list_false (length (h :: t)) = 
-                  (false :: (mk_list_false (length t))))). { admit. }
-        rewrite (@mk_list_false_succ false a0). unfold bv_ultP in *.
-        case_eq ((size (false :: mk_list_false (length a0)) =? size (false :: a0))%N).
-        { intros.   
-
-Lemma mk_list_false_succ : forall (h : bool) (t : list bool), 
-  (mk_list_false (length (h :: t)) = (false :: (mk_list_false (length t))).
-Lemma bv_non_neg_aux : forall (h : bool) (t : list bool),
-bv_ultP (zeros (length (h :: t))) (true :: t).
-*)
-
- 
-Lemma bvdm: forall a b: bitvector, size a = size b ->
-   (bv_not (bv_and a b)) = (bv_or (bv_not a) (bv_not b)).
-Proof. intros. unfold bv_and, bv_or, bv_not.
-       rewrite H, N.eqb_refl.
-       unfold bits, size in *. 
-       rewrite !map_length, H, N.eqb_refl.
-       now rewrite not_list_and_or.
-Qed.
-
-(* End Practice *)
 
 
 (*------------------------------Addition------------------------------*)
@@ -126,16 +26,6 @@ Proof.
     - easy.
 Qed.
 
-(** May be of use *)
-Theorem bvadd_U: forall (n : N),
-  forall (s t x: bitvector), (size s) = n /\ (size t) = n /\ (size x) = n ->
-  (bv_add x s) = t <-> (x = (bv_subt' t s)).
-Proof. intros n s t x (Hs, (Ht, Hx)).
-  split; intro A.
-  - rewrite <- A. symmetry. exact (@bv_subt'_add n x s Hx Hs).
-  - rewrite A. exact (bv_add_subst_opp Ht Hs).
-Qed.
-
 (* Equivalent to bvadd *)
 Theorem bvadd_e: forall (n : N),
   forall (s t : bitvector), (size s) = n /\ (size t) = n ->
@@ -144,6 +34,11 @@ Proof. intros n s t (Hs, Ht).
   exists (bv_subt' t s).
   split; [exact (bv_subt'_size Ht Hs) | exact (bv_add_subst_opp Ht Hs)].
 Qed.
+
+
+
+
+
 (*------------------------------------------------------------*)
 
 

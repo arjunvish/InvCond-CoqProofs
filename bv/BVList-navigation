@@ -25,7 +25,7 @@ Module RAWBITVECTOR_LIST <: RAWBITVECTOR.
 All the implementation is done here. *)
 
 - Section Housekeeping
-  + Definitions and lemmas necessary for the module
+  + size definition and lemmas
   + zeros definitions and lemmas
   + one definitions and lemmas
   + bv_concat definitions and lemmas
