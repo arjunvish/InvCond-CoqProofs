@@ -3499,6 +3499,26 @@ Proof.
   rewrite rev_mk_list_true. rewrite <- rev_length. apply (@ule_list_big_endian_1 (rev b)).
 Qed.
 
+Lemma bv_ule_1_size : forall (x : bitvector), 
+  bv_ule x (mk_list_true (N.to_nat (size x))) = true.
+Proof.
+  intros. induction x.
+  + easy. 
+  + unfold bv_ule. 
+    case_eq (size (a :: x) =? size (mk_list_true (N.to_nat (size (a :: x))))).
+    - intros. rewrite ule_list_1. easy.
+    - intros. unfold size in H. rewrite Nat2N.id in H.
+      rewrite length_mk_list_true in H.
+      now rewrite N.eqb_refl in H.
+Qed.
+
+Lemma bv_ule_1_length : forall (x : bitvector),
+  bv_ule x (mk_list_true (length x)) = true.
+Proof.
+  intros. pose proof (@bv_ule_1_size x). unfold size in H.
+  rewrite Nat2N.id in H. apply H.
+Qed.
+
 Lemma bv_uleP_1_size : forall (x : bitvector), bv_uleP x (mk_list_true (N.to_nat (size x))).
 Proof.
   intros. induction x.
@@ -4504,6 +4524,38 @@ Proof.
       specialize (@H x y ltxy2). rewrite H. simpl. rewrite app_nil_r. easy.
 Qed.
 
+Lemma bv_ule_1_firstn : forall (n : nat) (x : bitvector), 
+  (n < length x)%nat ->
+  bv_ule (firstn n x) (firstn n (mk_list_true (length x))) = true.
+Proof.
+  intros. unfold bv_ule. 
+  case_eq (size (firstn n x) =? size (firstn n (mk_list_true (length x)))).
+  + intros. pose proof bv_ule_1_length as bv_leq_1. unfold ule_list.
+    case_eq (ule_list_big_endian (rev (firstn n x)) (rev (firstn n (mk_list_true (length x))))).
+    - intros. easy.
+    - intros. 
+      assert ((n < length x)%nat -> firstn n (mk_list_true (length x)) = mk_list_true n).
+      { apply prefix_mk_list_true. }
+      assert (ule_list_big_endian (rev (firstn n x)) (rev (firstn n (mk_list_true (length x)))) = true).
+      { specialize (@H2 H). rewrite H2. rewrite rev_mk_list_true.
+        specialize (@bv_leq_1 (rev (firstn n x))). 
+        assert (n = length (rev (firstn n x))). 
+        { rewrite rev_length. pose proof firstn_length_le as firstn_length_le.
+          specialize (@firstn_length_le bool x n). 
+          apply Nat.lt_le_incl in H. specialize (@firstn_length_le H). 
+          rewrite firstn_length_le; easy. } 
+        rewrite H3 at 2. apply ule_list_big_endian_1. }
+      rewrite H3 in H1. now contradict H1.
+  + intros size_x_mlt. assert (length_x_mlt : length x = length (mk_list_true (length x))).
+    { rewrite length_mk_list_true. easy. } 
+    pose proof length_eq_firstn_eq as length_eq_firstn_eq.
+    unfold size in size_x_mlt. pose proof eqb_refl as eqb_refl. 
+    specialize (@N.eqb_refl (N.of_nat (length (firstn n (mk_list_true (length x)))))).
+    specialize (@length_eq_firstn_eq n x (mk_list_true (length x)) length_x_mlt H).
+    rewrite length_eq_firstn_eq in size_x_mlt. rewrite N.eqb_refl in size_x_mlt.
+    now contradict size_x_mlt.
+Qed.
+
 Lemma bv_uleP_1_firstn : forall (n : nat) (x : bitvector), (n < length x)%nat ->
         bv_uleP (firstn n x) (firstn n (mk_list_true (length x))).
 Proof.
@@ -4738,8 +4790,9 @@ Qed.
 (* x << s <= 1 << s *)
 
 Lemma bv_shl_n_bits_a_1_leq : forall (n : N) (x s : bitvector),
-  size x = n -> size s = n -> bv_uleP (shl_n_bits_a x (list2nat_be_a s))
-  (shl_n_bits_a (mk_list_true (length s)) (list2nat_be_a s)).
+  size x = n -> size s = n -> 
+  bv_ule (shl_n_bits_a x (list2nat_be_a s))
+         (shl_n_bits_a (mk_list_true (length s)) (list2nat_be_a s)) = true.
 Proof.
   intros n x s Hx Hs. assert (length x = length (mk_list_true (length s))).
     { pose proof Hx as Hxx. pose proof Hs as Hss. unfold size in Hxx, Hss.
@@ -4756,38 +4809,39 @@ Proof.
     induction (list2nat_be_a s).
     - simpl. rewrite Nat.sub_0_r. rewrite firstn_all.
       rewrite H. rewrite firstn_all. 
-      rewrite H1. apply bv_uleP_1_length. 
+      rewrite H1. apply bv_ule_1_length. 
     - rewrite Nat.ltb_lt in H0.
       pose proof Nat.lt_succ_l as lt_succ_l.
       specialize (@lt_succ_l n0 (length x) H0). apply Nat.ltb_lt in lt_succ_l.
       apply IHn0 in lt_succ_l.
-      assert (bv_uleP_1_firstn : forall (n : nat) (x : bitvector), 
+      assert (bv_ule_1_firstn : forall (n : nat) (x : bitvector), 
         (n < length x)%nat ->
-        bv_uleP (firstn n x) (firstn n (mk_list_true (length x)))).
-      { apply bv_uleP_1_firstn. }
+        bv_ule (firstn n x) (firstn n (mk_list_true (length x))) = true).
+      { apply bv_ule_1_firstn. }
       rewrite H1.
-      specialize (@bv_uleP_1_firstn ((length x) - (S n0))%nat x).
-      assert (bv_uleP_pre_append : forall (x y z : bitvector), bv_uleP x y ->
-              bv_uleP (z ++ x) (z ++ y)).
-      { apply bv_uleP_pre_append. }
-      specialize (@bv_uleP_pre_append (firstn (length x - S n0) x)
+      specialize (@bv_ule_1_firstn ((length x) - (S n0))%nat x).
+      assert (bv_ule_pre_append : forall (x y z : bitvector), bv_ule x y = true ->
+              bv_ule (z ++ x) (z ++ y) = true).
+      { apply bv_ule_pre_append. }
+      specialize (@bv_ule_pre_append (firstn (length x - S n0) x)
       (firstn (length x - S n0) (mk_list_true (length x))) (mk_list_false (S n0))).
-      apply bv_uleP_pre_append. apply bv_uleP_1_firstn.
+      apply bv_ule_pre_append. apply bv_ule_1_firstn.
       assert (forall m n : nat, (S m < n)%nat -> (n - (S m) < n)%nat). 
       { intros. apply Nat.sub_lt. apply Nat.lt_le_incl in H2. 
         apply H2. apply Nat.lt_0_succ. }
       specialize (@H2 n0 (length x) H0). apply H2.
-  + intros. apply bv_uleP_refl.
+  + intros. apply bv_ule_refl.
 Qed.
 
-Lemma bv_shl_a_1_leq : forall (n : N) (x s : bitvector), size x = n -> size s = n -> 
-            bv_uleP (bv_shl_a x s) (bv_shl_a (bv_not (zeros (size s))) s).
+Lemma bv_shl_a_1_leq : forall (n : N) (x s : bitvector), 
+  size x = n -> size s = n -> 
+  bv_ule (bv_shl_a x s) (bv_shl_a (bv_not (zeros (size s))) s) = true.
 Proof.
   intros n x s Hx Hs. unfold zeros. unfold size. rewrite Nat2N.id.
   rewrite bv_not_false_true. unfold bv_shl_a. rewrite Hx, Hs.
   unfold size. rewrite length_mk_list_true. pose proof Hs as Hss.
   unfold size in Hss. rewrite Hss.
-  pose proof (@eqb_refl n). rewrite H.
+  pose proof (@N.eqb_refl n). rewrite H.
   apply (@bv_shl_n_bits_a_1_leq n x s Hx Hs).
 Qed.
 
