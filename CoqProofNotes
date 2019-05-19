@@ -1,0 +1,34 @@
+- 'rewrite @term' let's you rewrite even the variables in term.
+- 'rewrite !term' rewrites all occurences of the term in the goal.
+- 'now rewrite' is equivalent to 'rewrite; easy'.
+- 'specialize (hyp term) takes hypothesis hyp and instantiates it with term(s).
+- To test if the function works as expected, run "Eval compute in fun_name args".
+- To search for a lemma, run "SearchPattern (forall a b: N, _ _ = true <->  _ = _)".
+- When you have a hypothesis of the form (x =? x = false) where x : N (=? is equality over binary nats N), 
+  use eqb_refl that states that forall n : N, n =? n = true 
+  (specialize it with x and then rewrite it into the hypothesis and contradict).
+- eqb_N : forall (a b : N), a = b -> a =? b = true is proved manually in BVList.v since it might be useful.
+- Use 'inversion' to get smaller equalities from the equality of inductive types. Ex: From h1 :: t1 = h2 :: t2, inversion gives you h1 = h2, and t1 = t2.
+- Nat.ltb_lt : (n <? m) = true <-> n < m. From https://coq.inria.fr/library/Coq.Arith.PeanoNat.html
+
+- Least significant bit (LSB) - units value or traditional right most bit. 
+- Most significant bit (MSB) - traditional left most bit.
+- Big-endian encoding - MSB is stored in the lowest address. In other words, the word is written left to right.
+- Little-endian encoding - LSB is stored in the lowest address. In other words, the word is written right to left (reverse order from common English).
+
+export OPAMROOT=~/opam-coq.8.9.0
+eval `opam config env`
+
+Notes from Burak:
+- "bv_ult_nat" is the lemma that equalizes the comparison over bitvectors and their values in nat.
+- if you need to prove any inductive property over "bv_ult", please use the induction principle "rev_ind"; something like "induction A using rev_ind". Because this operation functions over reversed lists (due to big-endiannes), and Coq's default induction principle over lists may not throw you provable cases.
+- the file BVList.v is too large so that it may be hard to find useful lemmas. Please use Coq's "SearchAbout (― structure here like (_ -> _) ―)" vernac with the intended structure to see if something useful is there or in Coq's standard library.
+- when you are proving the conditions over shift operators; better use the definitions ending with "_a". They are much simpler, and also I was able prove that "bv_shr" and "bv_shl" are equal to "bv_shr_a" and "bv_shl_a" so that they could be used interchangeably, but not yet that "bv_ashr" is "bv_ashr_a". This will be done later.
+- coqhammer may be useful to prove some small cases (first order statements). However, if you think that it is time consuming to read how it works, you may skip it just by admitting all subgoals closed by coqhammer (we can enable them later); these are the ones starting with "Reconstr.".
+- To test if the function works as expected, run "Eval compute in fun_name args.
+
+Lemmas:
+- bv_ugtP_not_ones : forall a, (exists b, b > a) => a != 1
+- bv_not_eq_1_ultP_1 : forall b, b != 1 => b < 1
+- bv_leq_1_length (bv_leq_1_size): forall x, x <= 1
+- bv_ult_uleP_trans : forall a b c, a < b => b <= c => a < c
