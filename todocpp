@@ -1,0 +1,13 @@
+After submission:
+- bvshl_neq_ltr
+- bvshr_ugt_rtl
+- Get ICs for neg and subt rows.
+- Prove IEs over neg and subt.
+- Add >=u to the library.
+- Equivalence between <=u and ~>u.
+- IEs over predicates <=u and >=u.
+- Equivalence between >=u and ~<u.
+- Equivalence between bvashr and bvashr_a.
+- Proving stuff about dependent types is hard due to Coq's unification algorithm. Read up on this.
+- Try to replace BVList.v with BVList2.v.
+- Look through Burak's proofs/finish written proofs.
