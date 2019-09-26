@@ -1670,6 +1670,12 @@ Proof. intros. unfold bv_and, bv_or, bv_not.
        now rewrite not_list_and_or.
 Qed.
 
+Lemma bv_not_not_eq : forall (h : bool) (t : bitvector), 
+  bv_not (h :: t) <> (h :: t).
+Proof.
+  intros. unfold not. induction h; easy.
+Qed.
+
 
 
 
@@ -5842,6 +5848,79 @@ Proof.
         pose proof (@firstn_all bool ((mk_list_false (length (a :: b))))).
         rewrite length_mk_list_false in H1. apply H1.
     - now rewrite length_mk_list_false.
+Qed.
+
+
+(* b << 0 = b *)
+Lemma length_zero_nil : forall (b : bitvector), 
+  0%nat = length b -> [] = b.
+Proof.
+  intros. induction b; easy.
+Qed.
+
+Lemma bvshl_b_zeros : forall (b : bitvector), 
+  bv_shl_a b (zeros (size b)) = b.
+Proof.
+  intros. unfold bv_shl_a. rewrite zeros_size.
+  rewrite eqb_refl. unfold list2nat_be_a, zeros, size.
+  rewrite Nat2N.id. rewrite list2N_mk_list_false.
+  simpl. unfold shl_n_bits_a.
+  case_eq (0 <? length b)%nat; intros.
+  + simpl. rewrite Nat.sub_0_r. now rewrite firstn_all.
+  + rewrite Nat.ltb_ge in H. apply (@le_n_0_eq (length b)) in H.
+    rewrite <- H. simpl. now apply length_zero_nil.
+Qed.
+
+
+Lemma mk_list_false_true_app : forall x y : nat, (y < x)%nat ->
+  mk_list_false y ++ mk_list_true (x - y) <> mk_list_false x.
+Proof.
+  intros x y ltyx.
+  induction y.
+  + simpl. rewrite Nat.sub_0_r. induction x; easy.
+  + pose proof ltyx as ltyx2. apply Nat.lt_succ_l in ltyx2.
+    specialize (@IHy ltyx2). unfold not. intros. apply rev_func in H.
+    rewrite rev_app_distr in H. rewrite rev_mk_list_false in H.
+    rewrite rev_mk_list_false in H. rewrite rev_mk_list_true in H.
+    case_eq (x - S y)%nat.
+    - intros. apply minus_neq_O in ltyx. unfold not in ltyx. 
+      apply ltyx. apply H0. 
+    - intros. rewrite H0 in H. simpl in H. induction x.
+      * easy.
+      * simpl in H. now contradict H.
+Qed.
+
+Lemma bvshl_ones_neq_zero : forall (n : nat) (b : bitvector),
+  length b = n ->
+  bv_ult b (nat2bv (N.to_nat (size b)) (size b)) = true ->
+  b <> mk_list_false (length b) ->
+  bv_shl (mk_list_true n) b <> mk_list_false n.
+Proof.
+  intros n b Hb H bnot0. induction n.
+  + symmetry in Hb. pose proof (@length_zero_nil b Hb). 
+    symmetry in H0. rewrite H0 in *. now contradict H.
+  + rewrite bv_shl_eq. unfold bv_shl_a. unfold size. 
+    rewrite length_mk_list_true. rewrite Hb. rewrite eqb_refl.
+    unfold shl_n_bits_a. rewrite length_mk_list_true.
+    rewrite <- Hb. 
+    pose proof (@bv_ult_nat b (nat2bv (N.to_nat (size b)) (size b))) as ult_eq.
+    rewrite (@length_nat2bv (N.to_nat (size b)) (size b)) in ult_eq.
+    unfold size in ult_eq at 1. rewrite Nat2N.id in ult_eq.
+    rewrite Nat.eqb_refl in ult_eq. assert (true: true = true) by easy.
+    specialize (@ult_eq true). rewrite ult_eq in H.
+    unfold bv2nat_a, list2nat_be_a, nat2bv in H. rewrite N2Nat.id in H.
+    rewrite (@list2N_N2List_eq (size b)) in H. unfold size in H.
+    rewrite Nat2N.id in H. unfold list2nat_be_a. rewrite H.
+    assert (sub_le : ((length b - N.to_nat (list2N b))%nat < (length b))%nat).
+    { rewrite Nat.ltb_lt in H. pose proof H as Hleq. 
+      apply Nat.lt_le_incl in Hleq. 
+      pose proof (@not_mk_list_false b bnot0). rewrite Nat.ltb_lt in H0.
+      pose proof Nat.sub_lt. 
+      pose proof (@Nat.sub_lt (length b) (N.to_nat (list2N b)) Hleq H0).
+      apply H2. }
+      rewrite (@prefix_mk_list_true (length b - N.to_nat (list2N b))%nat 
+                       (length b) sub_le).
+      apply mk_list_false_true_app. rewrite Nat.ltb_lt in H. apply H.
 Qed.
 
 

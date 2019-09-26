@@ -1,13 +1,35 @@
-After submission:
-- bvshl_neq_ltr
-- bvshr_ugt_rtl
-- Get ICs for neg and subt rows.
-- Prove IEs over neg and subt.
-- Add >=u to the library.
-- Equivalence between <=u and ~>u.
-- IEs over predicates <=u and >=u.
-- Equivalence between >=u and ~<u.
-- Equivalence between bvashr and bvashr_a.
+PxTP Presentation (August 26):
+- Read CAV paper.
+- Reaad CADE paper.
+- Prepare presentation.
 - Proving stuff about dependent types is hard due to Coq's unification algorithm. Read up on this.
-- Try to replace BVList.v with BVList2.v.
+- Read about MathComp and SSReflect.
+- Reconstr tactics perform a proof search provided two sets of arguments (dependencies). Reconstr (A, B, C) (X, Y, Z). A, B and C are the lemmas that may prove the lemma by unfolding the definitions X, Y, Z. A reconstruction tactic does not have to succeed since the dependencies are brought by some "premise selection" strategy which does not always give the correct ones (this is just an educated guess ― sort of "machine learning" if you want). Also, even thought the dependencies are the actual ones to close the goal, proof search may fail. To see the details of the main proof search procedure behind such tactics, please look into Ben-Yelles algorithm. It is not at all necessary for the talk, I am just saying it for possible further interest.
+- Proof irrelevance.
+- Read about this library https://github.com/pedagand/ssrbit and the paper "From Sets to Bits in Coq" from https://link.springer.com/content/pdf/10.1007%2F978-3-319-29604-3.pdf
+
+CPP Goals (October 16):
+- Prove bvshr_ugt_rtl.
+- State IEs over not and neg and !=, <u, >u, <=, >=.
+- Define bv_sgt.
 - Look through Burak's proofs/finish written proofs.
+- Explain usage of N and nat in the library or change them to use just one.
+- Fix spelling mistake, such as subst for sub?
+- Read about CIC from Burak's email.
+- Read Chantal's thesis.
+
+Done:
+- IE bvshl_neq.
+- Define uge.
+- Proof between <= and < \/ =; proof between >= and > \/ =.
+- IE bvnot_eq.
+- IE bvshl_uge.
+- Proof between <= and !>; proof between >= and !<
+- Replace old library with reorganized version in a branch.
+- Prove bvneg_eq.
+- Equivalence between bvashr and bvashr_a.
+- Make changes to the paper according to reviews.txt.
+- Ask Burak about whether SMTCoq will be broken.
+- Prove bvashr_ule2.
+- Prove bvashr_uge2.
+
